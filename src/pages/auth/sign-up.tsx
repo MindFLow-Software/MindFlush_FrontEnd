@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 const signUpForm = z.object({
     email: z.string().email(),
@@ -17,6 +17,9 @@ const signUpForm = z.object({
 type SignUpForm = z.infer<typeof signUpForm>
 
 export function SignUp() {
+
+    const navigate = useNavigate()
+
     const {
         register,
         handleSubmit,
@@ -32,9 +35,9 @@ export function SignUp() {
 
             toast.success('Enviamos um link de confirmação para seu e-mail.', {
                 action: {
-                    label: 'Reenviar',
+                    label: 'Login',
                     onClick: () => {
-                        handleSignUp(data)
+                        navigate('/sign-in')
                     },
                 },
             })
