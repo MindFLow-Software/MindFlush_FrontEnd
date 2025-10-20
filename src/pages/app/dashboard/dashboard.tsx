@@ -4,7 +4,8 @@ import { MonthPatientsAmountCard } from './month-patients-amount-card'
 import { MonthCancellationsAmountCard } from './month-cancellations-amount-card'
 import { DaySessionsAmountCard } from './day-sessions-amount-card'
 import { SessionsChart } from './sessions-chart'
-import { PopularSessionsChart } from './popular-products-chart'
+import { PatientsByAgeChart } from './patients-by-age-chart'
+import { PatientsByGenderChart } from './patients-by-gender-chart'
 
 export function Dashboard() {
   return (
@@ -24,7 +25,8 @@ export function Dashboard() {
         <SessionsChart />
       </div>
       <div className="grid grid-cols-4 gap-4">
-        <PopularSessionsChart />
+        <PatientsByAgeChart />
+        <PatientsByGenderChart/>
 
       </div>
     </>

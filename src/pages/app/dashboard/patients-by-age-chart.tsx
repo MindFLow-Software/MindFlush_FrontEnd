@@ -6,29 +6,37 @@ import colors from "tailwindcss/colors"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-// Dados adaptados para MindFlow
+// 🔹 Dados de pacientes por faixa etária
 const data = [
-    { category: "Cognitiva", sessions: 40 },
-    { category: "Comportamental", sessions: 30 },
-    { category: "de Casal", sessions: 50 },
-    { category: "Sessões de Grupo", sessions: 16 },
-    { category: "Atendimentos Online", sessions: 26 },
+    { ageRange: "0-12 anos", patients: 8 },
+    { ageRange: "13-17 anos", patients: 15 },
+    { ageRange: "18-25 anos", patients: 32 },
+    { ageRange: "26-40 anos", patients: 46 },
+    { ageRange: "41-60 anos", patients: 28 },
+    { ageRange: "60+ anos", patients: 10 },
 ]
 
-const COLORS = [colors.sky[400], colors.amber[400], colors.violet[400], colors.emerald[400], colors.rose[400]]
+const COLORS = [
+    colors.sky[400],
+    colors.amber[400],
+    colors.violet[400],
+    colors.emerald[400],
+    colors.rose[400],
+    colors.orange[400],
+]
 
-const totalSessions = data.reduce((sum, item) => sum + item.sessions, 0)
+const totalPatients = data.reduce((sum, item) => sum + item.patients, 0)
 
 function CustomTooltip({ active, payload }: any) {
     if (active && payload && payload.length) {
         const data = payload[0]
-        const percentage = ((data.value / totalSessions) * 100).toFixed(1)
+        const percentage = ((data.value / totalPatients) * 100).toFixed(1)
 
         return (
             <div className="rounded-lg border bg-background p-3 shadow-lg">
                 <p className="font-medium text-sm mb-1">{data.name}</p>
                 <p className="text-sm text-muted-foreground">
-                    {data.value} sessões ({percentage}%)
+                    {data.value} pacientes ({percentage}%)
                 </p>
             </div>
         )
@@ -36,22 +44,23 @@ function CustomTooltip({ active, payload }: any) {
     return null
 }
 
-export function PopularSessionsChart() {
+export function PatientsByAgeChart() {
     return (
-        <Card className="col-span-4">
+        <Card className="col-span-2">
             <CardHeader className="pb-8">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-base font-medium">Sessões populares</CardTitle>
+                    <CardTitle className="text-base font-medium">Distribuição por Idade</CardTitle>
                     <BarChart className="h-4 w-4 text-muted-foreground" />
                 </div>
             </CardHeader>
+
             <CardContent>
                 <ResponsiveContainer width="100%" height={240}>
                     <PieChart style={{ fontSize: 12 }}>
                         <Pie
                             data={data}
-                            nameKey="category"
-                            dataKey="sessions"
+                            nameKey="ageRange"
+                            dataKey="patients"
                             cx="50%"
                             cy="50%"
                             outerRadius={86}
@@ -59,18 +68,12 @@ export function PopularSessionsChart() {
                             strokeWidth={8}
                             labelLine={false}
                             label={(props: any) => {
-                                const cx = props.cx ?? 0
-                                const cy = props.cy ?? 0
-                                const midAngle = props.midAngle ?? 0
-                                const innerRadius = props.innerRadius ?? 0
-                                const outerRadius = props.outerRadius ?? 0
-                                const value = props.value ?? 0
-
+                                const { cx, cy, midAngle, innerRadius, outerRadius, value } = props
                                 const RADIAN = Math.PI / 180
                                 const radius = 12 + innerRadius + (outerRadius - innerRadius)
                                 const x = cx + radius * Math.cos(-midAngle * RADIAN)
                                 const y = cy + radius * Math.sin(-midAngle * RADIAN)
-                                const percentage = ((value / totalSessions) * 100).toFixed(0)
+                                const percentage = ((value / totalPatients) * 100).toFixed(0)
 
                                 return (
                                     <text
@@ -101,22 +104,29 @@ export function PopularSessionsChart() {
                     </PieChart>
                 </ResponsiveContainer>
 
-                <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 place-items-center">
                     {data.map((item, index) => {
-                        const percentage = ((item.sessions / totalSessions) * 100).toFixed(1)
+                        const percentage = ((item.patients / totalPatients) * 100).toFixed(1)
                         return (
-                            <div key={item.category} className="flex items-start gap-2">
-                                <div className="mt-1 h-3 w-3 rounded-sm flex-shrink-0" style={{ backgroundColor: COLORS[index] }} />
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-medium text-foreground truncate">{item.category}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {item.sessions} ({percentage}%)
-                                    </p>
-                                </div>
+                            <div
+                                key={item.ageRange}
+                                className="flex flex-col items-center text-center space-y-1"
+                            >
+                                <div
+                                    className="h-3 w-3 rounded-sm"
+                                    style={{ backgroundColor: COLORS[index] }}
+                                />
+                                <p className="text-xs font-medium text-foreground truncate max-w-[80px]">
+                                    {item.ageRange}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    {item.patients} ({percentage}%)
+                                </p>
                             </div>
                         )
                     })}
                 </div>
+
             </CardContent>
         </Card>
     )
