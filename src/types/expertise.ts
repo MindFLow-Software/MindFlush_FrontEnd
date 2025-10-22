@@ -1,11 +1,12 @@
 // @_types/expertise.ts
 export type Expertise =
-    | "clinical"
-    | "child"
-    | "adolescent"
-    | "couples"
-    | "organizational"
-    | "other";
+  | "OTHER"
+  | "SOCIAL"
+  | "INFANT"
+  | "CLINICAL"
+  | "JURIDICAL"
+  | "PSYCHOTHERAPIST"
+  | "NEUROPSYCHOLOGY";
 
 // @_types/psychologist-role.ts
-export type PsychologistRole = "admin" | "psychologist" | "assistant";
+export type PsychologistRole =| "PSYCHOLOGIST" | "PATIENT";

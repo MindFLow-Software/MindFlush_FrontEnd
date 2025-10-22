@@ -59,6 +59,7 @@ export function SessionsChart() {
                         margin={{
                             left: 12,
                             right: 12,
+                            top: 15,
                         }}
                     >
                         <CartesianGrid vertical={false} />

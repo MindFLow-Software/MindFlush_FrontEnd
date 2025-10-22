@@ -1,3 +1,3 @@
 // @_types/enum-gender.ts
 
-export type Gender = "male" | "female" | "other";
+export type Gender = "MASCULINE" | "FEMININE" | "OTHER";
