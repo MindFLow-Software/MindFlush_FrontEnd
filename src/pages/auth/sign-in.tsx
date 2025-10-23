@@ -2,97 +2,119 @@ import { Helmet } from 'react-helmet-async'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { useMutation } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Link, useSearchParams } from 'react-router-dom'
-import { useMutation } from '@tanstack/react-query'
 import { signIn } from '@/api/sign-in'
 
-const signInForm = z.object({
-    email: z.string().email(),
-    password: z.string()
+const signInSchema = z.object({
+    email: z.string().email({ message: 'E-mail inválido' }),
+    password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres' }),
 })
 
-type SignInForm = z.infer<typeof signInForm>
+type SignInSchema = z.infer<typeof signInSchema>
 
 export function SignIn() {
-
     const [searchParams] = useSearchParams()
+    const navigate = useNavigate()
 
     const {
         register,
         handleSubmit,
-        formState: { isSubmitting },
-    } = useForm<SignInForm>({
+        formState: { isSubmitting, errors },
+    } = useForm<SignInSchema>({
+        resolver: zodResolver(signInSchema),
         defaultValues: {
             email: searchParams.get('email') ?? '',
+            password: '',
         },
     })
 
     const { mutateAsync: authenticate } = useMutation({
-        mutationFn: signIn
-
+        mutationFn: signIn,
     })
 
-    async function handleSignIn(data: SignInForm) {
+    async function handleSignIn(data: SignInSchema) {
         try {
-            const response = await authenticate({
-                email: data.email,
-                password: data.password
-            })
+            const response = await authenticate(data)
 
-            console.log('Resposta da autenticação:', response)
+            localStorage.setItem('token', response.jwt)
+            toast.success('Login realizado com sucesso! 👋', { duration: 4000 })
 
+            navigate('/dashboard')
+        } catch (error: any) {
+            console.error('❌ Erro no login:', error)
 
-            toast.success('Enviamos um link de autenticação para seu e-mail.', {
-                action: {
-                    label: 'Reenviar',
-                    onClick: () => {
-                        handleSignIn(data)
-                    },
-                },
-            })
-        } catch (error) {
-            toast.error('Credenciais inválidas.')
+            if (error?.response?.status === 401) {
+                toast.error('Credenciais inválidas. Verifique e tente novamente.')
+            } else if (error?.response?.status === 500) {
+                toast.error('Erro no servidor. Tente novamente mais tarde.')
+            } else {
+                toast.error('Ocorreu um erro inesperado. Tente novamente.')
+            }
         }
     }
 
     return (
         <>
             <Helmet title="Entrar no MindFlush" />
-            <div className="p-8">
-                <Button variant={'link'} asChild className='absolute right-8 top-8'>
-                    <Link to="/sign-up">
-                        Criar Conta
-                    </Link>
+            <div className="p-8 relative flex min-h-screen items-center justify-center">
+                <Button
+                    variant="link"
+                    asChild
+                    className="absolute right-8 top-8 text-blue-600 hover:text-blue-800"
+                >
+                    <Link to="/sign-up">Criar Conta</Link>
                 </Button>
 
-                <div className="flex w-[350px] flex-col justify-center gap-6">
+                <div className="flex w-[360px] flex-col justify-center gap-6">
                     <div className="flex flex-col gap-2 text-center">
                         <h1 className="text-2xl font-semibold tracking-tight">
-                            Bem-vindo(a) ao MindFlush
+                            Bem-vindo(a) ao <span className="text-blue-700">MindFlush</span>
                         </h1>
                         <p className="text-sm text-muted-foreground">
-                            Faça login para acessar seu painel e acompanhar seus pacientes com mais clareza e conexão.
+                            Faça login para acessar seu painel e acompanhar seus pacientes com mais
+                            clareza e conexão.
                         </p>
                     </div>
 
                     <form onSubmit={handleSubmit(handleSignIn)} className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="email">E-mail profissional</Label>
-                            <Input id="email" type="email" {...register('email')} placeholder="exemplo@mindflush.com" />
-
+                            <Input
+                                id="email"
+                                type="email"
+                                placeholder="exemplo@mindflush.com"
+                                {...register('email')}
+                            />
+                            {errors.email && (
+                                <p className="text-sm text-red-500">{errors.email.message}</p>
+                            )}
                         </div>
 
                         <div className="space-y-2">
                             <Label htmlFor="password">Senha</Label>
-                            <Input id="password" type="password" {...register('password')} placeholder="exemploMindflush123" />
+                            <Input
+                                id="password"
+                                type="password"
+                                placeholder="exemploMindflush123"
+                                {...register('password')}
+                            />
+                            {errors.password && (
+                                <p className="text-sm text-red-500">{errors.password.message}</p>
+                            )}
                         </div>
 
-                        <Button disabled={isSubmitting} className="w-full cursor-pointer hover:bg-blue-700" type="submit">
-                            Entrar
+                        <Button
+                            disabled={isSubmitting}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                            type="submit"
+                        >
+                            {isSubmitting ? 'Entrando...' : 'Entrar'}
                         </Button>
                     </form>
                 </div>
