@@ -1,20 +1,29 @@
 "use client"
 
+import { useState } from "react"
+import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
+import { CloudDownload } from "lucide-react"
+
 import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
-import { CloudDownload } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { useState } from "react"
-import { format } from "date-fns"
-import { ptBR } from "date-fns/locale"
+
+import { formatCEP } from "@/utils/formatCEP"
+import { formatCPF } from "@/utils/formatCPF"
+import { formatPhone } from "@/utils/formatPhone"
+
 
 export function RegisterPatients() {
     const [date, setDate] = useState<Date | undefined>()
+    const [cpf, setCpf] = useState("")
+    const [phone, setPhone] = useState("")
+    const [cep, setCep] = useState("")
 
     return (
         <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
@@ -29,16 +38,23 @@ export function RegisterPatients() {
                         {/* Nome */}
                         <div className="space-y-2">
                             <Label htmlFor="firstName">Primeiro Nome</Label>
-                            <Input id="firstName" placeholder="Ex: Mariana" />
+                            <Input id="firstName" placeholder="Ex: Mariana" maxLength={30} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="lastName">Último Nome</Label>
-                            <Input id="lastName" placeholder="Ex: Silva" />
+                            <Input id="lastName" placeholder="Ex: Silva" maxLength={50} />
                         </div>
 
+                        {/* CPF */}
                         <div className="space-y-2">
                             <Label htmlFor="cpf">CPF</Label>
-                            <Input id="cpf" placeholder="000.000.000-00" />
+                            <Input
+                                id="cpf"
+                                placeholder="000.000.000-00"
+                                value={cpf}
+                                onChange={(e) => setCpf(formatCPF(e.target.value))}
+                                maxLength={14}
+                            />
                         </div>
 
                         {/* Data de Nascimento */}
@@ -63,20 +79,40 @@ export function RegisterPatients() {
                             </Popover>
                         </div>
 
+                        {/* Telefone */}
                         <div className="space-y-2">
                             <Label htmlFor="phoneNumber">Telefone</Label>
-                            <Input id="phoneNumber" placeholder="(11) 99999-9999" />
+                            <Input
+                                id="phoneNumber"
+                                placeholder="(11) 99999-9999"
+                                value={phone}
+                                onChange={(e) => setPhone(formatPhone(e.target.value))}
+                                maxLength={15}
+                            />
                         </div>
 
+                        {/* Email */}
                         <div className="space-y-2">
                             <Label htmlFor="email">Email</Label>
                             <Input id="email" type="email" placeholder="exemplo@email.com" />
+                        </div>
+
+                        {/* CEP */}
+                        <div className="space-y-2">
+                            <Label htmlFor="cep">CEP</Label>
+                            <Input
+                                id="cep"
+                                placeholder="00000-000"
+                                value={cep}
+                                onChange={(e) => setCep(formatCEP(e.target.value))}
+                                maxLength={9}
+                            />
                         </div>
                     </div>
 
                     <div className="space-y-2">
                         <Label htmlFor="password">Senha</Label>
-                        <Input id="password" type="password" placeholder="Mínimo 6 caracteres" />
+                        <Input id="password" type="password" placeholder="Mínimo 6 caracteres" minLength={6} maxLength={30} />
                     </div>
                 </div>
 
@@ -124,11 +160,13 @@ export function RegisterPatients() {
                     </div>
                 </div>
 
+                {/* URL da Foto */}
                 <div className="space-y-2">
                     <Label htmlFor="profileImageUrl">URL da Foto</Label>
                     <Input id="profileImageUrl" placeholder="https://exemplo.com/foto.jpg" />
                 </div>
 
+                {/* Upload */}
                 <div>
                     <Empty className="border border-dashed py-6">
                         <EmptyHeader>

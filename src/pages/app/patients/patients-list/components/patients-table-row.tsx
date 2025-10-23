@@ -1,14 +1,27 @@
 import { Search, Trash2, UserPen } from 'lucide-react'
-
 import { Button } from '@/components/ui/button'
 import { TableCell, TableRow } from '@/components/ui/table'
 import { Dialog, DialogTrigger } from '@/components/ui/dialog'
 import { PatientsDetails } from './patients-details'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
-// interface PatitentsTableRow {}
+interface PatientsTableRowProps {
+    patient: {
+        id: string
+        cpf: string
+        firstName: string
+        lastName: string
+        dateOfBirth: string
+        phoneNumber: string
+        gender: string
+        status?: string
+        email?: string
+    }
+}
 
-export function PatientsTableRow() {
+export function PatientsTableRow({ patient }: PatientsTableRowProps) {
+    const { cpf, email, firstName, lastName, dateOfBirth, phoneNumber, gender, status } = patient
+
     return (
         <TableRow>
             <TableCell>
@@ -23,17 +36,20 @@ export function PatientsTableRow() {
                 </Dialog>
             </TableCell>
 
-            <TableCell className="font-medium">12332112333</TableCell>
-            <TableCell className="font-medium">Paulo Octavio de OliveiraStraforini</TableCell>
-            <TableCell className="text-muted-foreground"> 06/09/2004 </TableCell>
-            <TableCell className="text-muted-foreground">em 2 dias</TableCell>
-            <TableCell className="text-muted-foreground">15988888888</TableCell>
-            <TableCell className="text-muted-foreground">Masculino</TableCell>
+            <TableCell className="font-medium">{cpf}</TableCell>
+            <TableCell className="font-medium">{firstName} {lastName}</TableCell>
+            <TableCell className="text-muted-foreground">{phoneNumber}</TableCell>
+            <TableCell className="text-muted-foreground">{new Date(dateOfBirth).toLocaleDateString()}</TableCell>
+            <TableCell className="text-muted-foreground">{email}</TableCell>
+            <TableCell className="text-muted-foreground">{gender}</TableCell>
 
             <TableCell>
                 <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-slate-400" />
-                    <span className="font-medium text-muted-foreground">Em acompanhamento</span>
+                    <span className={`h-2 w-2 rounded-full ${status === "Ativo" ? "bg-green-500" : "bg-slate-400"
+                        }`} />
+                    <span className="font-medium text-muted-foreground">
+                        {status || "Em acompanhamento"}
+                    </span>
                 </div>
             </TableCell>
 
