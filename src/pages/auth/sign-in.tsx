@@ -62,12 +62,10 @@ export function SignIn() {
     return (
         <>
             <Helmet title="Entrar no MindFlush" />
-            <div className="p-8 relative flex min-h-screen items-center justify-center">
-                <Button
-                    variant="link"
-                    asChild
-                    className="absolute right-8 top-8 text-blue-600 hover:text-blue-800"
-                >
+            <div className="p-4 sm:p-8">
+                <Button variant={"link"} asChild className="absolute right-4 top-4 sm:right-8 sm:top-8">
+
+
                     <Link to="/sign-up">Criar Conta</Link>
                 </Button>
 
