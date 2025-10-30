@@ -3,29 +3,28 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { deletePatients } from "@/api/delete-patients"
+import { toast } from "sonner"
 
 interface DeletePatientProps {
-    patientId: string
     fullName: string
     onClose: () => void
+    onDelete: () => Promise<void>
+    isDeleting: boolean
 }
 
-export function DeletePatientDialog({ patientId, fullName, onClose }: DeletePatientProps) {
-    const [loading, setLoading] = useState(false)
+export function DeletePatientDialog({ fullName, onClose, onDelete, isDeleting }: DeletePatientProps) {
     const [error, setError] = useState<string | null>(null)
 
     async function handleDelete() {
         try {
-            setLoading(true)
             setError(null)
-            await deletePatients(patientId)
-            alert("Paciente excluído com sucesso!")
+            await onDelete()
+            toast.success(`Paciente ${fullName} excluído com sucesso!`) // <- feedback de sucesso
             onClose()
         } catch (err: any) {
-            setError(err?.response?.data?.message || "Erro ao excluir paciente")
-        } finally {
-            setLoading(false)
+            const errorMessage = err?.response?.data?.message || "Erro ao excluir paciente"
+            setError(errorMessage)
+            toast.error(errorMessage)
         }
     }
 
@@ -34,19 +33,18 @@ export function DeletePatientDialog({ patientId, fullName, onClose }: DeletePati
             <DialogHeader>
                 <DialogTitle>Excluir paciente</DialogTitle>
                 <DialogDescription>
-                    Tem certeza que deseja excluir <strong>{fullName}</strong>?
-                    Essa ação é irreversível.
+                    Tem certeza que deseja excluir <strong>{fullName}</strong>? Essa ação é irreversível.
                 </DialogDescription>
             </DialogHeader>
 
             {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
 
             <DialogFooter className="flex justify-end gap-3 pt-4">
-                <Button variant="outline" onClick={onClose} disabled={loading}>
+                <Button variant="outline" onClick={onClose} disabled={isDeleting}>
                     Cancelar
                 </Button>
-                <Button variant="destructive" onClick={handleDelete} disabled={loading}>
-                    {loading ? "Excluindo..." : "Confirmar exclusão"}
+                <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+                    {isDeleting ? "Excluindo..." : "Confirmar exclusão"}
                 </Button>
             </DialogFooter>
         </DialogContent>

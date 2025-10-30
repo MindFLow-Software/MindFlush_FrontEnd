@@ -1,9 +1,11 @@
 "use client"
 
 import { useState } from "react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { CloudDownload } from "lucide-react"
+import { toast } from "sonner"
 
 import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -19,7 +21,9 @@ import { formatCPF } from "@/utils/formatCPF"
 import { formatPhone } from "@/utils/formatPhone"
 import { registerPatients, type RegisterPatientsBody } from "@/api/register-patients"
 
+
 export function RegisterPatients() {
+    const queryClient = useQueryClient()
     const [date, setDate] = useState<Date | undefined>()
     const [cpf, setCpf] = useState("")
     const [phone, setPhone] = useState("")
@@ -27,48 +31,76 @@ export function RegisterPatients() {
     const [gender, setGender] = useState("FEMININE")
     const [role, setRole] = useState("PATIENT")
     const [isActive, setIsActive] = useState(true)
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        setLoading(true)
-        setError(null)
+    // === MUTATION COM ATUALIZAÇÃO EM TEMPO REAL ===
+    const { mutateAsync: registerPatientFn, isPending } = useMutation({
+        mutationFn: registerPatients,
+        onMutate: async (variables) => {
+            await queryClient.cancelQueries({ queryKey: ["patients"] })
+            const previousPatients = queryClient.getQueryData(["patients"])
 
-        try {
-            const form = e.currentTarget
-            const formData = new FormData(form)
+            // Atualiza cache otimisticamente
+            queryClient.setQueryData(["patients"], (oldData: any) => {
+                if (Array.isArray(oldData)) {
+                    return [...oldData, variables]
+                }
+                if (oldData?.data && Array.isArray(oldData.data)) {
+                    return {
+                        ...oldData,
+                        data: [...oldData.data, variables],
+                    }
+                }
+                return oldData
+            })
 
-            const data: RegisterPatientsBody = {
-                firstName: formData.get("firstName") as string,
-                lastName: formData.get("lastName") as string,
-                email: formData.get("email") as string | undefined,
-                password: formData.get("password") as string,
-                phoneNumber: phone,
-                profileImageUrl: formData.get("profileImageUrl") as string | undefined,
-                dateOfBirth: date!,
-                cpf,
-                role: role as any,
-                gender: gender as any,
-                isActive,
-                expertise: "NONE" as any, // ajustar conforme necessidade
+            return { previousPatients }
+        },
+        onError: (_err, _vars, context) => {
+            // Reverte o cache se algo falhar
+            if (context?.previousPatients) {
+                queryClient.setQueryData(["patients"], context.previousPatients)
             }
+            toast.error("Erro ao cadastrar paciente.")
+        },
+        onSuccess: () => {
+            toast.success("Paciente cadastrado com sucesso!")
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["patients"] })
+        },
+    })
 
-            await registerPatients(data)
-            alert("Paciente cadastrado com sucesso!")
-            form.reset()
-            setCpf("")
-            setPhone("")
-            setCep("")
-            setDate(undefined)
-            setGender("FEMININE")
-            setRole("PATIENT")
-            setIsActive(true)
-        } catch (err: any) {
-            setError(err?.response?.data?.message || "Erro ao cadastrar paciente")
-        } finally {
-            setLoading(false)
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault()
+
+        const form = e.currentTarget
+        const formData = new FormData(form)
+
+        const data: RegisterPatientsBody = {
+            firstName: formData.get("firstName") as string,
+            lastName: formData.get("lastName") as string,
+            email: (formData.get("email") as string) || undefined,
+            password: formData.get("password") as string,
+            phoneNumber: phone,
+            profileImageUrl: (formData.get("profileImageUrl") as string) || undefined,
+            dateOfBirth: date!,
+            cpf,
+            role: role as any,
+            gender: gender as any,
+            isActive,
+            expertise: "NONE" as any,
         }
+
+        await registerPatientFn(data)
+
+        form.reset()
+        setCpf("")
+        setPhone("")
+        setCep("")
+        setDate(undefined)
+        setGender("FEMININE")
+        setRole("PATIENT")
+        setIsActive(true)
     }
 
     return (
@@ -159,14 +191,15 @@ export function RegisterPatients() {
                         </div>
                     </div>
 
+                    {/* Senha */}
                     <div className="space-y-2">
                         <Label htmlFor="password">Senha</Label>
                         <Input id="password" name="password" type="password" placeholder="Mínimo 6 caracteres" minLength={6} maxLength={30} />
                     </div>
                 </div>
 
+                {/* Gênero / Perfil / Ativo */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 ">
-                    {/* Gênero */}
                     <div className="space-y-2">
                         <Label htmlFor="gender">Gênero</Label>
                         <Select value={gender} onValueChange={setGender}>
@@ -181,7 +214,6 @@ export function RegisterPatients() {
                         </Select>
                     </div>
 
-                    {/* Perfil */}
                     <div className="space-y-2">
                         <Label htmlFor="role">Perfil</Label>
                         <Select value={role} onValueChange={setRole}>
@@ -194,7 +226,6 @@ export function RegisterPatients() {
                         </Select>
                     </div>
 
-                    {/* Ativo */}
                     <div className="space-y-2">
                         <Label htmlFor="isActive">Ativo?</Label>
                         <Select value={isActive ? "true" : "false"} onValueChange={(v) => setIsActive(v === "true")}>
@@ -235,12 +266,10 @@ export function RegisterPatients() {
 
                 {/* Botão Cadastrar */}
                 <div className="pt-2">
-                    <Button type="submit" className="w-full" disabled={loading}>
-                        {loading ? "Cadastrando..." : "Cadastrar paciente"}
+                    <Button type="submit" className="w-full" disabled={isPending}>
+                        {isPending ? "Cadastrando..." : "Cadastrar paciente"}
                     </Button>
                 </div>
-
-                {error && <p className="text-red-500 mt-2">{error}</p>}
             </form>
         </DialogContent>
     )

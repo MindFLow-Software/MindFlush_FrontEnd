@@ -58,7 +58,7 @@ export function PatientsTableFilters() {
 
                 <Dialog>
                     <DialogTrigger asChild>
-                        <Button size="sm" className="gap-2 w-full lg:w-auto shrink-0">
+                        <Button size="sm" className="gap-2 w-full lg:w-auto shrink-0 cursor-pointer">
                             <UserRoundPlus className="h-4 w-4" />
                             Cadastrar paciente
                         </Button>

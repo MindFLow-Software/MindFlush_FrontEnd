@@ -87,7 +87,7 @@ export function PatientsList() {
                                             colSpan={9}
                                             className="text-center text-muted-foreground py-6"
                                         >
-                                            Nenhum paciente encontrado.
+                                            Nenhum paciente cadastrado.
                                         </TableHead>
                                     </TableRow>
                                 )}
