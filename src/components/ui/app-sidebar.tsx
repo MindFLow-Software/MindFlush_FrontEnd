@@ -53,8 +53,6 @@ const navMain = [
         isActive: true,
         items: [
             { title: "Dashboard", url: "/" },
-            { title: "Starred", url: "#" },
-            { title: "Settings", url: "#" },
         ],
     },
     {
@@ -92,8 +90,8 @@ const navMain = [
         url: "#",
         icon: Settings2,
         items: [
-            { title: "Perfil", url: "#" },
-            { title: "Dados", url: "#" },
+            { title: "Perfil", url: "/account" },
+            { title: "Dados", url: "/perfil" },
         ],
     },
 ]

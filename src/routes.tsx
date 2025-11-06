@@ -9,6 +9,7 @@ import { SignIn } from './pages/auth/sign-in'
 import { SignUp } from './pages/auth/sign-up'
 import { VideoRoom } from './pages/app/video-room/video-room'
 import { AppointmentsPage } from './pages/app/appointment/appointment-list'
+import { MockPsychologistProfilePage } from './pages/app/account/account'
 
 export const router = createBrowserRouter([
   {
@@ -31,6 +32,14 @@ export const router = createBrowserRouter([
       {
         path: '/appointment',
         element: <AppointmentsPage />,
+      },
+      {
+        path: '/account',
+        element: <MockPsychologistProfilePage />,
+      },
+      {
+        path: '/perfil',
+        element: <MockPsychologistProfilePage />,
       },
     ],
   },
