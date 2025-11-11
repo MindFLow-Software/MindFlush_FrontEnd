@@ -2,8 +2,9 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
-import { format } from "date-fns"
+import { format, subDays } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { useMemo } from "react" // 🔑 Importar useMemo
 
 import {
     Card,
@@ -30,9 +31,19 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function NewPatientsChart() {
+    // 1. 🔑 ESTABILIZAR DATAS: Usar useMemo para que o cálculo só ocorra na montagem
+    const { startDate, endDate } = useMemo(() => {
+        const end = new Date();
+        const start = subDays(end, 7);
+        return { startDate: start, endDate: end };
+    }, []) // Dependência vazia garante que só roda uma vez
+
     const { data, isLoading, isError } = useQuery({
-        queryKey: ["new-patients"],
-        queryFn: getAmountPatientsChart,
+        // 2. Usar datas estáveis no queryKey
+        queryKey: ["new-patients", startDate.toISOString(), endDate.toISOString()],
+        queryFn: () => getAmountPatientsChart({ startDate, endDate }),
+        // 3. Adicionar retry baixo para evitar loop infinito em falhas de autenticação (401/403)
+        retry: 1, 
     })
 
     if (isLoading) {
