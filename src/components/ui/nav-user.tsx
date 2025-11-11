@@ -1,5 +1,3 @@
-// src/components/NavUser.tsx (Correto, sem alterações)
-
 "use client"
 
 import {
@@ -29,6 +27,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { useQuery } from "@tanstack/react-query"
 import { getProfile, type GetProfileResponse } from "@/api/get-profile"
+import { Link } from "react-router-dom" 
 
 export function NavUser() {
   const { isMobile } = useSidebar()
@@ -46,8 +45,8 @@ export function NavUser() {
   const name = profile
     ? `${profile.firstName} ${profile.lastName}`
     : isError
-      ? "Erro ao carregar"
-      : "Carregando..."
+    ? "Erro ao carregar"
+    : "Carregando..."
 
   const avatar = profile?.profileImageUrl
   const initials = profile?.firstName?.[0]?.toUpperCase() || "?"
@@ -124,23 +123,31 @@ export function NavUser() {
               <DropdownMenuSeparator />
 
               <DropdownMenuGroup>
-                <DropdownMenuItem>
-                  <Sparkles />
-                  Planos
+                <DropdownMenuItem asChild>
+                  <Link to="/planos" className="cursor-pointer"> 
+                    <Sparkles />
+                    Planos
+                  </Link>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
 
               <DropdownMenuSeparator />
 
               <DropdownMenuGroup>
-                <DropdownMenuItem>
-                  <BadgeCheck />
-                  Conta
+                <DropdownMenuItem asChild>
+                  <Link to="/account" className="cursor-pointer">
+                    <BadgeCheck />
+                    Conta
+                  </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <CreditCard />
-                  Pagamentos
+                
+                <DropdownMenuItem asChild>
+                  <Link to="/pagamentos" className="cursor-pointer">
+                    <CreditCard />
+                    Pagamentos
+                  </Link>
                 </DropdownMenuItem>
+
                 <DropdownMenuItem>
                   <Bell />
                   Notificações

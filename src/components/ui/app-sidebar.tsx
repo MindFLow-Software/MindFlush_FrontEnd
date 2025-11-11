@@ -10,7 +10,6 @@ import {
     GalleryVerticalEnd,
     Home,
     Map,
-    Settings2,
     Users2,
     Wallet,
 } from "lucide-react"
@@ -83,15 +82,6 @@ const navMain = [
             { title: "Planos e Assinaturas", url: "#" },
             { title: "Saques", url: "#" },
             { title: "Cobrança", url: "#" },
-        ],
-    },
-    {
-        title: "Configurações",
-        url: "#",
-        icon: Settings2,
-        items: [
-            { title: "Perfil", url: "/account" },
-            { title: "Dados", url: "/perfil" },
         ],
     },
 ]
