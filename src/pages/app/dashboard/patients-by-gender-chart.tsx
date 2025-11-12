@@ -5,7 +5,7 @@ import { BarChart } from "lucide-react"
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts"
 import colors from "tailwindcss/colors"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { getPatientsByGender, type PatientsByGenderResponse } from "@/api/patients-by-gender"
+import { getPatientsByGender, type PatientsByGenderResponse } from "@/api/get-patients-by-gender"
 
 const GENDER_TRANSLATIONS: Record<string, string> = {
     FEMININE: "Feminino",

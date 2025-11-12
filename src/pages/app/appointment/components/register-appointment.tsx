@@ -26,7 +26,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 
-import { registerAppointment, type RegisterAppointmentRequest } from "@/api/register-appointment"
+import { registerAppointment, type RegisterAppointmentRequest } from "@/api/create-appointment"
 import { getPatientsByName } from "@/api/get-patient-by-name"
 
 export function RegisterAppointment() {

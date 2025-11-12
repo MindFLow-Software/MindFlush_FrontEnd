@@ -19,7 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { formatCEP } from "@/utils/formatCEP"
 import { formatCPF } from "@/utils/formatCPF"
 import { formatPhone } from "@/utils/formatPhone"
-import { registerPatients, type RegisterPatientsBody } from "@/api/register-patients"
+import { registerPatients, type RegisterPatientsBody } from "@/api/create-patients"
 
 
 export function RegisterPatients() {

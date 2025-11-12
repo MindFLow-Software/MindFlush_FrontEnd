@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select"
 import { Link, useNavigate } from "react-router-dom"
 import { useMutation } from "@tanstack/react-query"
-import { registerPsychologist } from "@/api/register-user"
+import { registerPsychologist } from "@/api/create-user"
 
 import { formatCPF } from "@/utils/formatCPF"
 import { formatPhone } from "@/utils/formatPhone"
