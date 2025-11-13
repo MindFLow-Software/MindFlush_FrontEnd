@@ -2,7 +2,7 @@ import { api } from "@/lib/axios"
 
 export interface RegisterAppointmentRequest {
     patientId: string
-    psychologistId: string
+    psychologistId: string 
     diagnosis: string
     notes?: string
     scheduledAt: Date
@@ -29,6 +29,17 @@ export interface RegisterAppointmentResponse {
 export async function registerAppointment(
     data: RegisterAppointmentRequest
 ): Promise<RegisterAppointmentResponse> {
-    const response = await api.post<RegisterAppointmentResponse>("/appointments", data)
+    
+    const { psychologistId, ...rest } = data; 
+    
+    const payload = {
+        ...rest, 
+        scheduledAt: rest.scheduledAt.toISOString(),
+        startedAt: rest.startedAt?.toISOString(),
+        endedAt: rest.endedAt?.toISOString(),
+    }
+
+    const response = await api.post<RegisterAppointmentResponse>("/appointments", payload)
+    
     return response.data
 }
