@@ -21,7 +21,7 @@ const ParticipantTileMock: React.FC<ParticipantTileMockProps> = ({
         <div
             className={`relative flex items-center justify-center bg-gray-900 text-white rounded-lg overflow-hidden border-4 transition-all duration-300
                        ${isFocus ? "border-primary/80 h-full w-full" : "border-gray-600 h-28 w-48 sm:h-28 sm:w-48 lg:h-28 lg:w-full"}
-                       ${isLocal ? "order-last lg:order-none" : ""}`}
+                       ${isLocal ? "order-last lg:order-0" : ""}`}
         >
             {!isVideoEnabled && (
                 <div className="flex flex-col items-center">
@@ -75,7 +75,7 @@ export function VideoRoomMock() {
                         {...localParticipant}
                         isFocus={false}
                     />
-                    <div className="flex-shrink-0 h-28 w-48 sm:h-28 sm:w-48 lg:h-28 lg:w-full bg-gray-700 rounded-lg flex items-center justify-center text-gray-400 text-sm">
+                    <div className="shrink-0 h-28 w-48 sm:h-28 sm:w-48 lg:h-28 lg:w-full bg-gray-700 rounded-lg flex items-center justify-center text-gray-400 text-sm">
                         +1
                     </div>
                 </div>
