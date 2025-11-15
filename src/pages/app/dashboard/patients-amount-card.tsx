@@ -30,7 +30,7 @@ export function PatientsAmountCard() {
     <Card className="transition-all hover:shadow-md">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center justify-between text-base font-semibold">
-          Novos Pacientes (mês)
+          Total Pacientes
           <HeartStraight className="size-5 text-teal-500 dark:text-teal-400" />
         </CardTitle>
       </CardHeader>
