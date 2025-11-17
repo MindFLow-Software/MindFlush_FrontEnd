@@ -1,47 +1,48 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useQuery } from "@tanstack/react-query"
+import {
+    Table,
+    TableBody,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
 import { AppointmentsTableRow } from "./appointments-table-row"
-import { getAppointments, type Appointment } from "@/api/get-appointment"
+import { getAppointments, type GetAppointmentsResponse } from "@/api/get-appointment"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export function AppointmentsTable() {
-    const [appointments, setAppointments] = useState<Appointment[]>([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+    
+    const pageIndex = 0
+    const perPage = 10
+    
+    // 1. Query para buscar os dados
+    const { data: result, isLoading, isError } = useQuery<GetAppointmentsResponse, Error, GetAppointmentsResponse, (number)[]>({
+        queryKey: [ pageIndex],
+        queryFn: () => getAppointments({
+            pageIndex: pageIndex,
+            perPage: perPage,
+        }),
+        staleTime: 1000 * 60,
+    })
 
-    useEffect(() => {
-        async function loadAppointments() {
-            try {
-                const data = await getAppointments()
+    // 3. Destruturação segura
+    const appointments = result?.appointments ?? []
 
-                const list = Array.isArray(data)
-                    ? data
-                    : (data as any).appointments ?? []
-
-                setAppointments(list)
-            } catch (err) {
-                console.error("❌ Erro ao carregar agendamentos:", err)
-                setError("Erro ao buscar agendamentos. Tente novamente mais tarde.")
-            } finally {
-                setLoading(false)
-            }
-        }
-
-        loadAppointments()
-    }, [])
-
-    if (loading)
+    if (isLoading)
         return (
-            <p className="text-center text-muted-foreground">
-                Carregando agendamentos...
-            </p>
+            <div className="rounded-lg border shadow-sm p-4">
+                {Array.from({ length: perPage }).map((_, i) => (
+                    <Skeleton key={i} className="h-10 w-full mb-1" />
+                ))}
+            </div>
         )
 
-    if (error)
+    if (isError)
         return (
             <p className="text-center text-red-500">
-                {error}
+                Erro ao carregar agendamentos.
             </p>
         )
 
@@ -62,6 +63,7 @@ export function AppointmentsTable() {
                         <TableHead>Notas</TableHead>
                         <TableHead>Data / Hora</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Opções</TableHead>
                     </TableRow>
                 </TableHeader>
 
