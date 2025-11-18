@@ -18,10 +18,9 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
     useSidebar,
-}
-from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar"
+import { Skeleton } from "@/components/ui/skeleton"
 
-// 🔑 Interface Atualizada para incluir nomes
 interface TeamSwitcherTeam {
     name: string
     firstName: string
@@ -30,17 +29,35 @@ interface TeamSwitcherTeam {
     plan: string
 }
 
-export function TeamSwitcher({
-    teams,
-}: {
+interface TeamSwitcherProps {
     teams: TeamSwitcherTeam[]
-}) {
+    isLoading: boolean
+}
+
+export function TeamSwitcher({ teams, isLoading }: TeamSwitcherProps) {
     const { isMobile } = useSidebar()
-    // Define o primeiro item como ativo por padrão
-    const [activeTeam, setActiveTeam] = React.useState(teams[0])
+    // 1. Inicializa o estado com o primeiro item (o placeholder)
+    const [activeTeam, setActiveTeam] = React.useState(teams[0]) 
+    
+    // 2. 🔑 SINCRONIZAÇÃO: Atualiza o time ativo quando o prop 'teams' muda.
+    React.useEffect(() => {
+        if (teams && teams.length > 0) {
+            setActiveTeam(teams[0])
+        }
+    }, [teams]) 
 
     if (!activeTeam) {
         return null
+    }
+
+    if (isLoading) {
+        return (
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <Skeleton className="w-full h-14 rounded-xl" />
+                </SidebarMenuItem>
+            </SidebarMenu>
+        )
     }
 
     const fullName = `${activeTeam.firstName} ${activeTeam.lastName}`
@@ -58,7 +75,6 @@ export function TeamSwitcher({
                                 <Brain size={32} className="text-blue-500" />
                             </div>
                             <div className="grid flex-1 text-left text-sm leading-tight">
-                                {/* Exibe o nome completo do psicólogo */}
                                 <span className="truncate font-medium">{fullName}</span>
                                 <span className="truncate text-xs">{activeTeam.plan}</span>
                             </div>
@@ -83,7 +99,6 @@ export function TeamSwitcher({
                                 <div className="flex size-6 items-center justify-center rounded-md border">
                                     <team.logo className="size-3.5 shrink-0" />
                                 </div>
-                                {/* Exibe o nome completo no menu dropdown */}
                                 {team.firstName} {team.lastName}
                                 <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
                             </DropdownMenuItem>

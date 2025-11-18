@@ -23,16 +23,15 @@ import {
     SidebarHeader,
     SidebarRail,
 } from "./sidebar"
-import { useQuery } from "@tanstack/react-query" // 🔑 Importar useQuery
-import { getProfile, type GetProfileResponse } from "@/api/get-profile" // 🔑 Importar API de perfil
-import { Skeleton } from "@/components/ui/skeleton" // Para estado de carregamento
+import { useQuery } from "@tanstack/react-query"
+import { getProfile, type GetProfileResponse } from "@/api/get-profile"
 
 const navMain = [
     {
         title: "Home",
         url: "#",
         icon: Home,
-        isActive: false,
+        isActive: true,
         items: [
             { title: "Dashboard", url: "/" },
         ],
@@ -42,9 +41,8 @@ const navMain = [
         url: "#",
         icon: Users2,
         items: [
-            { title: "Cadastro de Pacientes", url: "/patients-list" },
+            { title: "Listagem de Pacientes", url: "/patients-list" },
             { title: "Documentos de Pacientes", url: "/patients-list" },
-
         ],
     },
     {
@@ -52,8 +50,8 @@ const navMain = [
         url: "#",
         icon: CalendarCheck,
         items: [
-            { title: "Meus Agendamentos", url: "/appointment" },
-            { title: "Sala de Atendimento", url: "/video-room" },
+            { title: "Meus Agendamentos", url: "/appointments" },
+            { title: "Sala de Atendimento", url: "/room" },
             { title: "Histórico de Sessões", url: "/sessions/history" },
         ],
     },
@@ -81,8 +79,7 @@ const projects = [
 ]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-
-    // 1. 🔍 Fetch do perfil logado
+    
     const { data: profile, isLoading } = useQuery<GetProfileResponse | null>({
         queryKey: ["psychologist-profile"],
         queryFn: getProfile,
@@ -90,48 +87,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     })
 
     const teams = React.useMemo(() => {
-        if (!profile) {
-            return [
-                {
-                    name: isLoading ? "Carregando..." : "Sem perfil",
-                    firstName: "...",
-                    lastName: "...",
-                    plan: "Básico",
-                    logo: GalleryVerticalEnd,
-                },
-            ]
-        }
+        const baseProfile = profile || { firstName: "...", lastName: "...", email: "..." };
 
-        // Mapeia os dados reais do psicólogo
         return [
             {
-                name: "Clínica MindFlow",
-                firstName: profile.firstName,
-                lastName: profile.lastName,
+                name: "Clínica MindFlow", 
+                firstName: baseProfile.firstName,
+                lastName: baseProfile.lastName,
                 logo: GalleryVerticalEnd,
-                plan: "Plano Enterprise", // Idealmente, buscaria o plano do objeto 'profile'
+                plan: "Plano Enterprise",
             },
         ]
-    }, [profile, isLoading])
-
-    if (isLoading) {
-        return (
-            <Sidebar collapsible="icon" {...props}>
-                <SidebarHeader>
-                    <Skeleton className="w-full h-14 rounded-xl" />
-                </SidebarHeader>
-                <SidebarContent>
-                    <Skeleton className="w-full h-96 rounded-xl mt-4" />
-                </SidebarContent>
-                <SidebarRail />
-            </Sidebar>
-        )
-    }
+    }, [profile])
 
     return (
         <Sidebar collapsible="icon" {...props}>
             <SidebarHeader>
-                <TeamSwitcher teams={teams} />
+                <TeamSwitcher teams={teams} isLoading={isLoading} />
             </SidebarHeader>
 
             <SidebarContent>
