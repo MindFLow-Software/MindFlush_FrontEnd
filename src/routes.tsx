@@ -11,6 +11,7 @@ import { AppointmentsRoom } from './pages/app/video-room/appoinmets-room'
 import { AppointmentsPage } from './pages/app/appointment/appointment-list'
 import { MockPsychologistProfilePage } from './pages/app/account/account'
 import { DashboardFinance } from './pages/app/finance/dashoard-finance'
+import { TestBilling } from './pages/app/billing/test-billing'
 
 export const router = createBrowserRouter([
   {
@@ -25,6 +26,10 @@ export const router = createBrowserRouter([
       {
         path: '/dashboard-finance',
         element: <DashboardFinance />,
+      },
+      {
+        path: '/billing',
+        element: <TestBilling />,
       },
       {
         path: '/patients-list',
