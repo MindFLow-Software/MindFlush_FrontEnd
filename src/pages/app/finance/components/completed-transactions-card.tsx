@@ -3,46 +3,43 @@ import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 export const CompletedTransactionsCard = () => {
-  // Dados estáticos para simulação
   const displayValue = "0"
   const description = "Transações completas"
 
   return (
-    <Card className={cn(
-      "relative overflow-hidden",
-      "rounded-2xl",
-      "border border-border border-b-[3px]",
-      "shadow-sm shadow-black/8",
-    )}>
-      {/* Efeito Aurora (Tema Neutro/Slate) */}
+    <Card
+      className={cn(
+        "relative overflow-hidden",
+        "rounded-2xl",
+        "border border-border/60 border-b-[3px] border-b-slate-700 dark:border-b-slate-500",
+        "shadow-md shadow-black/20 dark:shadow-black/8",
+        "bg-card transition-all",
+        "p-4"
+      )}
+    >
+      {/* Glow circular */}
       <div
         className={cn(
-          "absolute -top-16 -right-16",
-          "w-48 h-48",
-          "rounded-full",
-          "bg-linear-to-br from-slate-400/30 to-slate-700/30 dark:from-slate-400/70 dark:to-slate-700/70",
-          "blur-3xl opacity-60",
-          "pointer-events-none"
+          "absolute -top-14 -right-14",
+          "w-40 h-40 rounded-full",
+          "bg-gradient-to-r from-slate-400/50 to-slate-700/30 dark:from-slate-400/70 dark:to-slate-900",
+          "blur-3xl opacity-60 pointer-events-none"
         )}
       />
 
-      {/* Conteúdo Principal com Padding Compacto (p-4) */}
-      <div className="relative z-1 p-4 flex flex-col h-full justify-between">
+      <div className="relative z-10 flex flex-col gap-4">
 
-        {/* 1. ROW DE ÍCONE (TOPO ESQUERDO) */}
-        <div className="flex items-start mb-4">
-          {/* ÍCONE DE STATUS (RotateCw - Implica ciclo completo) */}
-          <div className="rounded-lg bg-slate-100 dark:bg-slate-950/40 p-2.5">
-            <RotateCw className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-          </div>
+        {/* Ícone */}
+        <div className="rounded-full bg-slate-100/80 dark:bg-slate-950/40 p-2 w-fit">
+          <RotateCw className="size-5 text-slate-700 dark:text-slate-400" />
         </div>
 
-        {/* 2. VALOR E DESCRIÇÃO (CONTENT) */}
-        <div className="flex flex-col gap-1">
-          <span className="text-3xl font-extrabold tracking-tight">
+        {/* Valor e descrição */}
+        <div className="flex flex-col gap-1.5">
+          <span className="text-2xl font-semibold tracking-tight leading-none">
             {displayValue}
           </span>
-          <p className="text-sm text-muted-foreground font-medium">
+          <p className="text-[13px] text-muted-foreground font-medium leading-none">
             {description}
           </p>
         </div>
