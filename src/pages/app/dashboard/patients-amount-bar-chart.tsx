@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/chart"
 
 import { Loader2 } from "lucide-react"
-import { cn } from "@/lib/utils"
 import { getAmountPatientsChart } from "@/api/get-amount-patients-chart"
 
 const chartConfig = {
@@ -32,29 +31,27 @@ const chartConfig = {
     },
 } satisfies ChartConfig
 
-// 🔑 Interface para receber os props de data do Dashboard
 interface NewPatientsBarChartProps {
-    startDate: Date | undefined
-    endDate: Date | undefined
+    startDate?: Date
+    endDate?: Date
 }
 
 export function NewPatientsBarChart({ startDate: propStartDate, endDate: propEndDate }: NewPatientsBarChartProps) {
-    
     const { startDate, endDate } = useMemo(() => {
         const end = propEndDate || new Date()
-        const start = propStartDate || subDays(end, 7) 
+        const start = propStartDate || subDays(end, 7)
         return { startDate: start, endDate: end }
     }, [propStartDate, propEndDate])
 
-    const startIso = startDate.toISOString()
-    const endIso = endDate.toISOString()
-
-
     const { data, isLoading, isError } = useQuery({
-        queryKey: ["new-patients-bar", startIso, endIso],
+        queryKey: ["new-patients-bar", startDate.toISOString(), endDate.toISOString()],
         queryFn: () => getAmountPatientsChart({ startDate, endDate }),
         retry: 1,
     })
+
+    const chartData = useMemo(() => data || [], [data])
+    const maxPatients = useMemo(() => Math.max(...chartData.map(d => d.newPatients), 0), [chartData])
+    const yAxisMax = useMemo(() => Math.max(10, maxPatients + Math.ceil(maxPatients * 0.2)), [maxPatients])
 
     if (isLoading) {
         return (
@@ -64,7 +61,7 @@ export function NewPatientsBarChart({ startDate: propStartDate, endDate: propEnd
         )
     }
 
-    if (isError || !data) {
+    if (isError || chartData.length === 0) {
         return (
             <Card className="col-span-6 flex h-[250px] items-center justify-center text-muted-foreground">
                 Erro ao carregar dados do gráfico
@@ -72,11 +69,8 @@ export function NewPatientsBarChart({ startDate: propStartDate, endDate: propEnd
         )
     }
 
-    const maxPatients = Math.max(...data.map(d => d.newPatients), 0)
-    const yAxisMax = Math.max(10, maxPatients + Math.ceil(maxPatients * 0.2))
-
     return (
-        <Card className={cn("col-span-6 py-0")}>
+        <Card className="col-span-6 py-0">
             <CardHeader className="px-6 pt-5 pb-3">
                 <CardTitle className="text-base font-medium">
                     Novos Pacientes por Dia
@@ -87,16 +81,9 @@ export function NewPatientsBarChart({ startDate: propStartDate, endDate: propEnd
             </CardHeader>
 
             <CardContent className="px-2 sm:p-6">
-                <ChartContainer
-                    config={chartConfig}
-                    className="aspect-auto h-[250px] w-full"
-                >
-                    <BarChart
-                        accessibilityLayer
-                        data={data}
-                        margin={{ left: 12, right: 12 }}
-                    >
-                        <CartesianGrid vertical={false} />
+                <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                    <BarChart data={chartData} margin={{ left: 12, right: 12 }}>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
 
                         <YAxis
                             domain={[0, yAxisMax]}
@@ -110,7 +97,7 @@ export function NewPatientsBarChart({ startDate: propStartDate, endDate: propEnd
                             tickLine={false}
                             axisLine={false}
                             tickMargin={8}
-                            minTickGap={24}
+                            minTickGap={20}
                             tickFormatter={(value) =>
                                 format(new Date(value), "dd/MM", { locale: ptBR })
                             }
@@ -119,22 +106,16 @@ export function NewPatientsBarChart({ startDate: propStartDate, endDate: propEnd
                         <ChartTooltip
                             content={
                                 <ChartTooltipContent
-                                    className="w-[140px]"
+                                    className="w-[160px]"
                                     nameKey="newPatients"
                                     labelFormatter={(value) =>
-                                        format(new Date(value), "dd 'de' MMMM 'de' yyyy", {
-                                            locale: ptBR,
-                                        })
+                                        format(new Date(value), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
                                     }
                                 />
                             }
                         />
 
-                        <Bar
-                            dataKey="newPatients"
-                            fill="var(--chart-1)"
-                            radius={[4, 4, 0, 0]}
-                        />
+                        <Bar dataKey="newPatients" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
                     </BarChart>
                 </ChartContainer>
             </CardContent>
