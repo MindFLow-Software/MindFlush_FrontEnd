@@ -1,11 +1,34 @@
 import { DollarSign } from 'lucide-react'
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { useMemo } from "react"
 
-export const TotalBalanceCard = () => {
+interface TotalBalanceCardProps {
+    balance?: number
+    diff?: number // percentual de variação em relação ao período anterior
+    isLoading?: boolean
+    isError?: boolean
+}
 
-    const displayValue = "R$ 0,00"
-    const description = "Total disponível"
+export const TotalBalanceCard = ({
+    balance = 0,
+    diff = 0,
+    isLoading = false,
+    isError = false
+}: TotalBalanceCardProps) => {
+
+    const { formattedDiff, diffSign, diffColorClass } = useMemo(() => {
+        const sign = diff >= 0 ? "+" : ""
+        const colorClass =
+            diff >= 0
+                ? "text-emerald-500 dark:text-emerald-400"
+                : "text-red-500 dark:text-red-400"
+        return {
+            formattedDiff: diff.toFixed(1),
+            diffSign: sign,
+            diffColorClass: colorClass
+        }
+    }, [diff])
 
     return (
         <Card
@@ -17,7 +40,22 @@ export const TotalBalanceCard = () => {
                 "bg-card transition-all",
                 "p-4"
             )}
+
         >
+
+            <img
+                src={'/money.svg'}
+                alt="Ícone de Cérebro/Ideia"
+                className={cn(
+                    "absolute bottom-0 right-0", // Posição
+                    "w-3xl h-auto max-w-[150px]", // Tamanho
+                    "opacity-70", // <-- Novo: Valor único para Light e Dark
+                    "pointer-events-none",        // Garante que não interfira no clique
+                    "translate-x-1/4 translate-y-1/4" // Move a imagem para fora do Card ligeiramente
+                )}
+            />
+
+            
             {/* Glow circular */}
             <div
                 className={cn(
@@ -35,15 +73,32 @@ export const TotalBalanceCard = () => {
                     <DollarSign className="size-5 text-blue-700 dark:text-blue-400" />
                 </div>
 
-                {/* Valor e descrição */}
-                <div className="flex flex-col gap-1.5">
-                    <span className="text-2xl font-semibold tracking-tight leading-none">
-                        {displayValue}
-                    </span>
-                    <p className="text-[13px] text-muted-foreground font-medium leading-none">
-                        {description}
-                    </p>
-                </div>
+                {isLoading ? (
+                    <div className="space-y-2">
+                        <div className="h-6 w-20 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                        <div className="h-3 w-36 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                    </div>
+                ) : isError ? (
+                    <div className="flex flex-col gap-1">
+                        <span className="text-sm font-medium text-red-500">Erro ao carregar</span>
+                        <span className="text-xs text-muted-foreground">Tente novamente</span>
+                    </div>
+                ) : (
+                    <div className="flex flex-col gap-1.5">
+                        <span className="text-2xl font-semibold tracking-tight leading-none">
+                            {balance.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                        </span>
+                        <p className="text-[13px] text-muted-foreground font-medium leading-none">
+                            Total disponível
+                        </p>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                            <span className={cn("font-semibold", diffColorClass)}>
+                                {diffSign}{formattedDiff}%
+                            </span>{" "}
+                            em relação ao período anterior
+                        </p>
+                    </div>
+                )}
             </div>
         </Card>
     )

@@ -1,12 +1,12 @@
 "use client"
 
 import { Helmet } from "react-helmet-async"
-import { DiscountValueCard } from "./components/DiscountValueCard.tsx"
-import { CompletedTransactionsCard } from "./components/completed-transactions-card"
-import { DateRangePicker } from "./components/date-range-picker"
+import { DiscountValueCard } from "./components/discount-value-card.tsx"
+import { CompletedTransactionsCard } from "./components/completed-transactions-card.tsx"
+import { DateRangePicker } from "./components/date-range-picker.tsx"
 import { useState } from 'react'
 import { subDays } from 'date-fns'
-import { TotalBalanceCard } from "./components/total-balance-card"
+import { TotalBalanceCard } from "./components/total-balance-card.tsx"
 
 interface DateRange {
     from: Date | undefined
@@ -20,7 +20,7 @@ const getInitialRange = (): DateRange => {
 }
 
 export function DashboardFinance() {
-    const [ ] = useState<DateRange>(getInitialRange)
+    const [] = useState<DateRange>(getInitialRange)
 
     const handleRangeChange = (range: DateRange) => {
         if (range.from && range.to) {

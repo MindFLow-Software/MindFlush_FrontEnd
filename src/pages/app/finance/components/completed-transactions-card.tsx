@@ -17,6 +17,20 @@ export const CompletedTransactionsCard = () => {
         "p-4"
       )}
     >
+
+      <img
+        src={'/transaction.svg'}
+        alt="Ícone de Cérebro/Ideia"
+        className={cn(
+          "absolute bottom-0 right-0", // Posição
+          "w-3xl h-auto max-w-[150px]", // Tamanho
+          "opacity-70", // <-- Novo: Valor único para Light e Dark
+          "pointer-events-none",        // Garante que não interfira no clique
+          "translate-x-1/4 translate-y-1/4" // Move a imagem para fora do Card ligeiramente
+        )}
+      />
+
+
       {/* Glow circular */}
       <div
         className={cn(
