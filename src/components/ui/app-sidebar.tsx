@@ -50,9 +50,9 @@ const navMain = [
         url: "#",
         icon: CalendarCheck,
         items: [
-            { title: "Meus Agendamentos", url: "/appointments" },
-            { title: "Sala de Atendimento", url: "/room" },
-            { title: "Histórico de Sessões", url: "/sessions/history" },
+            { title: "Meus Agendamentos", url: "/appointment" },
+            { title: "Sala de Atendimento", url: "/video-room" },
+            { title: "Histórico de Sessões", url: "#" },
         ],
     },
     {
