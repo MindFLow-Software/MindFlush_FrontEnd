@@ -33,7 +33,7 @@ const navMain = [
         icon: Home,
         isActive: true,
         items: [
-            { title: "Dashboard", url: "/" },
+            { title: "Dashboard", url: "/dashboard" },
         ],
     },
     {
