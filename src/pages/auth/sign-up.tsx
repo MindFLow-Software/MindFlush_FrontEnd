@@ -16,7 +16,7 @@ export function SignUp() {
           asChild
           className="absolute right-4 top-4 sm:right-8 sm:top-8"
         >
-          <Link to="/sign-in">Fazer Login</Link>
+          <Link to="/">Fazer Login</Link>
         </Button>
 
         {/* 3. Wrapper de conteúdo padronizado (max-w-[450px] e pt-16) */}

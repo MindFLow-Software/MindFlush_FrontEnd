@@ -1,14 +1,14 @@
 "use client"
 
 import { Helmet } from "react-helmet-async"
-import { PatientsCountCard } from "./patients-count-card"
-import { MonthPatientsAmountCard } from "./month-patients-amount-card"
-import { PatientsAmountCard } from "./patients-amount-card"
-import { SessionsChart } from "./sessions-chart"
-import { PatientsByAgeChart } from "./patients-by-age-chart"
-import { PatientsByGenderChart } from "./patients-by-gender-chart"
-import { DateRangePicker } from "./date-range-picker"
-import { NewPatientsBarChart } from "./patients-amount-bar-chart"
+import { PatientsCountCard } from "./components/patients-count-card"
+import { MonthPatientsAmountCard } from "./components/month-patients-amount-card"
+import { PatientsAmountCard } from "./components/patients-amount-card"
+import { SessionsChart } from "./components/sessions-chart"
+import { PatientsByAgeChart } from "./components/patients-by-age-chart"
+import { PatientsByGenderChart } from "./components/patients-by-gender-chart"
+import { DateRangePicker } from "./components/date-range-picker"
+import { NewPatientsBarChart } from "./components/patients-amount-bar-chart"
 import { useState } from 'react'
 import { subDays } from 'date-fns'
 
@@ -55,7 +55,7 @@ export function Dashboard() {
                 <SessionsChart />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 px-4 sm:px-6 lg:grid-cols-2">
+            <div className="grid grid-cols-2 gap-4 px-4 sm:px-6 lg:grid-cols-2">
                 <PatientsByAgeChart startDate={startDate} endDate={endDate} />
                 <PatientsByGenderChart startDate={startDate} endDate={endDate} />
             </div>

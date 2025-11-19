@@ -52,7 +52,7 @@ export function NavUser() {
     onSuccess: () => {
       // Notificação de sucesso adicionada
       toast.success('Logout realizado com sucesso!', { duration: 4000 }) 
-      navigate("/sign-in", { replace: true })
+      navigate("/", { replace: true })
     },
   })
 

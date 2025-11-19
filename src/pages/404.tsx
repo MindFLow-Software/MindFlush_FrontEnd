@@ -31,7 +31,7 @@ export function NotFound() {
                     <Button asChild size="lg" className="gap-2">
                         <Link to="/">
                             <Home className="h-4 w-4" />
-                            Voltar ao Dashboard
+                            Voltar ao Inicio
                         </Link>
                     </Button>
                 </div>

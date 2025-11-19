@@ -1,11 +1,12 @@
 "use client"
 
-import { BarChart, Loader2 } from "lucide-react"
+import { BarChart, Loader2 } from "lucide-react" 
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts"
 import colors from "tailwindcss/colors"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/axios"
+import { useMemo } from "react" 
 
 interface AgeStats {
     ageRange: string
@@ -49,20 +50,25 @@ interface PatientsByAgeChartProps {
 }
 
 export function PatientsByAgeChart({ startDate, endDate }: PatientsByAgeChartProps) {
-    
+
     const startIso = startDate?.toISOString()
     const endIso = endDate?.toISOString()
 
     const { data, isLoading, isError } = useQuery<AgeStats[], Error, AgeStats[], (string | undefined)[]>({
         queryKey: ['dashboard', 'age-stats', startIso, endIso],
         queryFn: () => getPatientsByAgeStats({ startDate: startIso, endDate: endIso }),
-        enabled: true, 
+        enabled: true,
         staleTime: 1000 * 60 * 5,
     })
 
+    const totalPatients = useMemo(() => {
+        return data ? data.reduce((sum, item) => sum + item.patients, 0) : 0
+    }, [data])
+
+
     if (isLoading || !data) {
         return (
-            <Card className="col-span-2 flex items-center justify-center h-[300px]">
+            <Card className="col-span-1 flex items-center justify-center h-[300px]">
                 <Loader2 className="size-6 animate-spin text-muted-foreground" />
             </Card>
         )
@@ -70,24 +76,27 @@ export function PatientsByAgeChart({ startDate, endDate }: PatientsByAgeChartPro
 
     if (isError) {
         return (
-            <Card className="col-span-2 flex items-center justify-center h-[300px]">
+            <Card className="col-span-1 flex items-center justify-center h-[300px]">
                 <p className="text-sm text-red-500">Erro ao carregar dados.</p>
             </Card>
         )
     }
 
-    const totalPatients = data.reduce((sum, item) => sum + item.patients, 0)
-
     return (
-        <Card className="col-span-2">
-            <CardHeader className="pb-8">
+        <Card className="col-span-1">
+            <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-base font-medium">Distribuição por Idade</CardTitle>
+                    {/* Título com destaque aprimorado */}
+                    <CardTitle className="text-lg font-bold">Distribuição por Idade</CardTitle>
                     <BarChart className="h-4 w-4 text-muted-foreground" />
                 </div>
+                {/* Subtítulo com o total de pacientes (fora do gráfico) */}
+                <p className="text-sm text-muted-foreground">
+                    Total de {totalPatients} pacientes no período
+                </p>
             </CardHeader>
 
-            <CardContent>
+            <CardContent className="space-y-6"> {/* Espaçamento entre gráfico e legenda */}
                 <ResponsiveContainer width="100%" height={240}>
                     <PieChart style={{ fontSize: 12 }}>
                         <Pie
@@ -100,26 +109,6 @@ export function PatientsByAgeChart({ startDate, endDate }: PatientsByAgeChartPro
                             innerRadius={64}
                             strokeWidth={8}
                             labelLine={false}
-                            label={(props: any) => {
-                                const { cx, cy, midAngle, innerRadius, outerRadius, value } = props
-                                const RADIAN = Math.PI / 180
-                                const radius = 12 + innerRadius + (outerRadius - innerRadius)
-                                const x = cx + radius * Math.cos(-midAngle * RADIAN)
-                                const y = cy + radius * Math.sin(-midAngle * RADIAN)
-                                const percentage = ((value / totalPatients) * 100).toFixed(0)
-
-                                return (
-                                    <text
-                                        x={x}
-                                        y={y}
-                                        className="fill-foreground text-xs font-medium"
-                                        textAnchor={x > cx ? "start" : "end"}
-                                        dominantBaseline="central"
-                                    >
-                                        {percentage}%
-                                    </text>
-                                )
-                            }}
                             animationBegin={0}
                             animationDuration={800}
                             animationEasing="ease-out"
@@ -137,24 +126,25 @@ export function PatientsByAgeChart({ startDate, endDate }: PatientsByAgeChartPro
                     </PieChart>
                 </ResponsiveContainer>
 
-                <div className="mt-6 grid grid-cols-5 sm:grid-cols-3 lg:grid-cols-5 gap-4 place-items-center">
+                {/* LEGENDA (Padronizada e simplificada) */}
+                <div className="flex flex-wrap justify-center gap-x-6 gap-y-3 p-4 border-t">
                     {data.map((item, index) => {
                         const percentage = ((item.patients / totalPatients) * 100).toFixed(1)
                         return (
                             <div
                                 key={item.ageRange}
-                                className="flex flex-col items-center text-center space-y-1"
+                                className="flex items-center space-x-2"
                             >
                                 <div
-                                    className="h-3 w-3 rounded-sm"
+                                    className="h-3 w-3 rounded-full shrink-0" 
                                     style={{ backgroundColor: COLORS[index % COLORS.length] }}
                                 />
-                                <p className="text-xs font-medium text-foreground truncate">
+                                <span className="text-sm font-medium text-foreground">
                                     {item.ageRange}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    {item.patients} ({percentage}%)
-                                </p>
+                                </span>
+                                <span className="text-sm text-muted-foreground">
+                                    ({percentage}%)
+                                </span>
                             </div>
                         )
                     })}

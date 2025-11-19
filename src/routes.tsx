@@ -13,23 +13,38 @@ import { MockPsychologistProfilePage } from './pages/app/account/account'
 import { DashboardFinance } from './pages/app/finance/dashboard-finance'
 
 export const router = createBrowserRouter([
+
+  {
+    path: '/',
+    element: <AuthLayout />,
+    children: [
+      {
+        path: '/',
+        element: <SignIn />,
+      },
+      {
+        path: '/sign-up',
+        element: <SignUp />,
+      },
+    ],
+  },
   {
     path: '/',
     element: <AppLayout />,
     errorElement: <NotFound />,
     children: [
       {
-        path: '/',
+        path: '/dashboard',
         element: <Dashboard />,
       },
       {
         path: '/dashboard-finance',
         element: <DashboardFinance />,
       },
-      {
-        path: '/billing',
-        element: <TestBilling />,
-      },
+      // {
+      //   path: '/billing',
+      //   element: <TestBilling />,
+      // },
       {
         path: '/patients-list',
         element: <PatientsList />,
@@ -49,20 +64,6 @@ export const router = createBrowserRouter([
       {
         path: '/perfil',
         element: <MockPsychologistProfilePage />,
-      },
-    ],
-  },
-  {
-    path: '/',
-    element: <AuthLayout />,
-    children: [
-      {
-        path: '/sign-in',
-        element: <SignIn />,
-      },
-      {
-        path: '/sign-up',
-        element: <SignUp />,
       },
     ],
   },
