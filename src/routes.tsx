@@ -27,6 +27,10 @@ export const router = createBrowserRouter([
         element: <DashboardFinance />,
       },
       {
+        path: '/billing',
+        element: <TestBilling />,
+      },
+      {
         path: '/patients-list',
         element: <PatientsList />,
       },

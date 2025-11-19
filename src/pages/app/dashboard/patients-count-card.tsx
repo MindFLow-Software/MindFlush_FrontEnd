@@ -76,7 +76,7 @@ export const PatientsCountCard = ({
                 className={cn(
                     "absolute -top-14 -right-14",
                     "w-40 h-40 rounded-full",
-                    "bg-gradient-to-r from-emerald-400/50 to-emerald-700/30 dark:from-emerald-400/70 dark:to-emerald-900",
+                    "bg-linear-to-r from-emerald-400/50 to-emerald-700/30 dark:from-emerald-400/70 dark:to-emerald-900",
                     "blur-3xl opacity-60 pointer-events-none"
                 )}
             />

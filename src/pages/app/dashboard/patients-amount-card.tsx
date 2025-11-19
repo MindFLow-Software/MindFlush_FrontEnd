@@ -40,7 +40,7 @@ export const PatientsAmountCard = () => {
         displayValue: '—',
         diffSign: '',
         formattedDiff: 0,
-        diffColorClass: 'text-red-600 dark:text-red-400'
+        diffColorClass: 'text-blue-600 dark:text-blue-400'
       }
     }
 
@@ -50,8 +50,8 @@ export const PatientsAmountCard = () => {
     const diffSign = formattedDiff >= 0 ? '+' : ''
     const diffColorClass =
       formattedDiff >= 0
-        ? 'text-red-600 dark:text-red-400'
-        : 'text-red-600 dark:text-red-400'
+        ? 'text-blue-600 dark:text-blue-400'
+        : 'text-blue-600 dark:text-blue-400'
 
     return { displayValue, diffSign, formattedDiff, diffColorClass }
   }, [state.total])
@@ -59,21 +59,34 @@ export const PatientsAmountCard = () => {
   return (
     <Card
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-border/60 border-b-[3px] border-b-red-700 dark:border-b-red-500",
+        "relative overflow-hidden rounded-2xl border border-border/60 border-b-[3px] border-b-blue-700 dark:border-b-blue-500",
         "shadow-md shadow-black/20 dark:shadow-black/8 bg-card transition-all p-4"
       )}
     >
       <div
         className={cn(
           "absolute -top-14 -right-14 w-40 h-40 rounded-full",
-          "bg-gradient-to-r from-red-400/50 to-red-700/30 dark:from-red-400/70 dark:to-red-900",
+          "bg-linear-to-r from-blue-400/50 to-blue-700/30 dark:from-blue-400/70 dark:to-blue-900",
           "blur-3xl opacity-60 pointer-events-none"
         )}
       />
 
+      {/* 2. IMAGEM DO CÉREBRO (NOVA ADIÇÃO) */}
+      <img
+        src={'/iconCountcard.svg'}
+        alt="Ícone de Cérebro/Ideia"
+        className={cn(
+          "absolute bottom-0 right-0", // Posição
+          "w-3xl h-auto max-w-[150px]", // Tamanho
+          "opacity-70", // <-- Novo: Valor único para Light e Dark
+          "pointer-events-none", // Garante que não interfira no clique
+          "translate-x-1/4 translate-y-1/4" // Move a imagem para fora do Card ligeiramente
+        )}
+      />
+
       <div className="relative z-10 flex flex-col gap-4">
-        <div className="rounded-full bg-red-100/80 dark:bg-red-950/40 p-2 w-fit">
-          <HeartHandshake className="size-5 text-red-700 dark:text-red-400" />
+        <div className="rounded-full bg-blue-100/80 dark:bg-blue-950/40 p-2 w-fit">
+          <HeartHandshake className="size-5 text-blue-700 dark:text-blue-400" />
         </div>
 
         {state.isLoading ? (
@@ -83,7 +96,7 @@ export const PatientsAmountCard = () => {
           </div>
         ) : state.isError ? (
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-red-500">Erro ao carregar</span>
+            <span className="text-sm font-medium text-blue-500">Erro ao carregar</span>
             <span className="text-xs text-muted-foreground">Tente novamente</span>
           </div>
         ) : (

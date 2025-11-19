@@ -106,7 +106,7 @@ export function NewPatientsBarChart({ startDate: propStartDate, endDate: propEnd
                         <ChartTooltip
                             content={
                                 <ChartTooltipContent
-                                    className="w-[160px]"
+                                    className="w-40"
                                     nameKey="newPatients"
                                     labelFormatter={(value) =>
                                         format(new Date(value), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })

@@ -3,6 +3,9 @@ import { Goal } from 'lucide-react'
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
+// Importe a imagem do cérebro (assumindo que está em /public)
+// NOTE: Se estiver usando Next.js, você pode precisar de um import específico.
+
 interface MonthSessionData {
     total: number
 }
@@ -41,6 +44,7 @@ export function MonthPatientsAmountCard() {
                 displayValue: '—',
                 diffSign: '',
                 formattedDiff: 0,
+                // Mantendo a cor do diff como emerald, se o objetivo for verde para positivo
                 diffColorClass: 'text-emerald-500 dark:text-emerald-400'
             }
         }
@@ -51,8 +55,8 @@ export function MonthPatientsAmountCard() {
         const diffSign = formattedDiff >= 0 ? '+' : ''
         const diffColorClass =
             formattedDiff >= 0
-                ? 'text-emerald-500 dark:text-emerald-400'
-                : 'text-red-500 dark:text-red-400'
+                ? 'text-emerald-500 dark:text-emerald-400' // Verde para positivo
+                : 'text-red-500 dark:text-red-400' // Vermelho para negativo
 
         return { displayValue, diffSign, formattedDiff, diffColorClass }
     }, [state.total])
@@ -60,15 +64,30 @@ export function MonthPatientsAmountCard() {
     return (
         <Card
             className={cn(
-                "relative overflow-hidden rounded-1l border border-border/60 border-b-[3px] border-b-purple-700 dark:border-b-purple-500",
+                // Corrigido: usando rounded-2xl (padrão) e bg-gradient-to-r
+                "relative overflow-hidden rounded-2xl border border-border/60 border-b-[3px] border-b-purple-700 dark:border-b-purple-500",
                 "shadow-md shadow-black/20 dark:shadow-black/8 bg-card transition-all p-4"
             )}
         >
+            {/* 1. GRADIENTE ABSOLUTO (ROXO) */}
             <div
                 className={cn(
                     "absolute -top-14 -right-14 w-40 h-40 rounded-full",
-                    "bg-gradient-to-r from-purple-300/50 to-purple-700/30 dark:from-purple-400/70 dark:to-purple-900",
+                    "bg-linear-to-r from-purple-300/50 to-purple-700/30 dark:from-purple-400/70 dark:to-purple-900",
                     "blur-3xl opacity-60 pointer-events-none"
+                )}
+            />
+
+            {/* 2. IMAGEM DO CÉREBRO (ADICIONADA) */}
+            <img
+                src={'/goal.svg'}
+                alt="Ícone de Cérebro/Ideia"
+                className={cn(
+                    "absolute bottom-0 right-0", // Posição
+                    "w-3xl h-auto max-w-[150px]", // Tamanho
+                    "opacity-70", // <-- Novo: Valor único para Light e Dark
+                    "pointer-events-none", // Garante que não interfira no clique
+                    "translate-x-1/4 translate-y-1/4" // Move a imagem para fora do Card ligeiramente
                 )}
             />
 
