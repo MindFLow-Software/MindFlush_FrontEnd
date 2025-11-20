@@ -35,7 +35,7 @@ export const TotalBalanceCard = ({
             className={cn(
                 "relative overflow-hidden",
                 "rounded-2xl",
-                "border border-border/60 border-b-[3px] border-b-blue-700 dark:border-b-blue-500",
+                "border border-border/60 border-b-[3px] border-b-green-700 dark:border-b-green-500",
                 "shadow-md shadow-black/20 dark:shadow-black/8",
                 "bg-card transition-all",
                 "p-4"
@@ -44,12 +44,12 @@ export const TotalBalanceCard = ({
         >
 
             <img
-                src={'/money.svg'}
+                src={'/money.png'}
                 alt="Ícone de Cérebro/Ideia"
                 className={cn(
                     "absolute bottom-0 right-0", // Posição
                     "w-3xl h-auto max-w-[150px]", // Tamanho
-                    "opacity-70", // <-- Novo: Valor único para Light e Dark
+                    "opacity-60", // <-- Novo: Valor único para Light e Dark
                     "pointer-events-none",        // Garante que não interfira no clique
                     "translate-x-1/4 translate-y-1/4" // Move a imagem para fora do Card ligeiramente
                 )}
@@ -61,7 +61,7 @@ export const TotalBalanceCard = ({
                 className={cn(
                     "absolute -top-14 -right-14",
                     "w-40 h-40 rounded-full",
-                    "bg-gradient-to-r from-blue-400/50 to-blue-700/30 dark:from-blue-400/70 dark:to-blue-900",
+                    "bg-gradient-to-r from-green-400/50 to-green-700/30 dark:from-green-400/70 dark:to-green-900",
                     "blur-3xl opacity-60 pointer-events-none"
                 )}
             />
@@ -69,8 +69,8 @@ export const TotalBalanceCard = ({
             <div className="relative z-10 flex flex-col gap-4">
 
                 {/* Ícone */}
-                <div className="rounded-full bg-blue-100/80 dark:bg-blue-950/40 p-2 w-fit">
-                    <DollarSign className="size-5 text-blue-700 dark:text-blue-400" />
+                <div className="rounded-full bg-green-100/80 dark:bg-green-950/40 p-2 w-fit">
+                    <DollarSign className="size-5 text-green-700 dark:text-green-400" />
                 </div>
 
                 {isLoading ? (

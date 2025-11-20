@@ -41,7 +41,7 @@ const navMain = [
         url: "#",
         icon: Users2,
         items: [
-            { title: "Listagem de Pacientes", url: "/patients-list" },
+            { title: "Cadastro de Pacientes", url: "/patients-list" },
             { title: "Documentos de Pacientes", url: "/patients-list" },
         ],
     },

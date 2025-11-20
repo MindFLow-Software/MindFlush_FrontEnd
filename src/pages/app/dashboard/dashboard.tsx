@@ -37,7 +37,6 @@ export function Dashboard() {
         <>
             <Helmet title="Dashboard" />
             <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 sm:py-6">
-                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Dashboard</h1>
 
                 <DateRangePicker
                     onChange={handleRangeChange}

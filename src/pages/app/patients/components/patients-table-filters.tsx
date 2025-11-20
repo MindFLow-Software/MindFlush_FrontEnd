@@ -1,169 +1,153 @@
 "use client"
 
-import type React from "react"
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { UserRoundPlus } from "lucide-react"
+import { Controller, useForm } from "react-hook-form"
+import { useSearchParams } from "react-router-dom"
+import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select"
 import { Dialog, DialogTrigger } from "@/components/ui/dialog"
 import { RegisterPatients } from "./register-patients"
 
-import { getPatientByCpf, type Patient } from "@/api/get-patient-by-cpf"
-import { getPatientsByName } from "@/api/get-patient-by-name"
+const patientsFilterSchema = z.object({
+  name: z.string().optional(),
+  cpf: z.string().optional(),
+  status: z.string().optional(),
+})
+
+type PatientsFilterSchema = z.infer<typeof patientsFilterSchema>
 
 export function PatientsTableFilters() {
-    const [cpf, setCpf] = useState("")
-    const [name, setName] = useState("")
-    const [status, setStatus] = useState("all")
+  const [searchParams, setSearchParams] = useSearchParams()
 
-    const [isLoading, setIsLoading] = useState(false)
-    const [searchError, setSearchError] = useState<string | null>(null)
-    const [foundPatients, setFoundPatients] = useState<Patient[]>([])
+  const name = searchParams.get("name")
+  const cpf = searchParams.get("cpf")
+  const status = searchParams.get("status")
 
-    const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value
-        setCpf(value)
-        if (value) {
-            setName("")
-        }
-    }
+  const { register, control, watch } = useForm<PatientsFilterSchema>({
+    resolver: zodResolver(patientsFilterSchema),
+    defaultValues: {
+      name: name ?? "",
+      cpf: cpf ?? "",
+      status: status ?? "all",
+    },
+  })
 
-    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value
-        setName(value)
-        if (value) {
-            setCpf("")
-        }
-    }
+  // Observa as mudanças no formulário
+  const filters = watch()
 
-    useEffect(() => {
-        const handleSearch = async () => {
-            const searchCpf = cpf.trim()
-            const searchName = name.trim()
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setSearchParams((state) => {
+        // Valores atuais na URL
+        const currentName = state.get("name") ?? ""
+        const currentCpf = state.get("cpf") ?? ""
+        const currentStatus = state.get("status") ?? "all"
 
-            if (!searchCpf && !searchName) {
-                setSearchError(null)
-                setFoundPatients([])
-                setIsLoading(false)
-                return
-            }
+        // Novos valores do formulário
+        const newName = filters.name ?? ""
+        const newCpf = filters.cpf ?? ""
+        const newStatus = filters.status ?? "all"
 
-            setIsLoading(true)
-            setSearchError(null)
-            setFoundPatients([])
+        // Verificamos se ALGUM filtro mudou de verdade
+        const hasChanged =
+          currentName !== newName ||
+          currentCpf !== newCpf ||
+          currentStatus !== newStatus
 
-            try {
-                if (searchCpf) {
-                    const { patient } = await getPatientByCpf(searchCpf)
-                    setFoundPatients(patient ? [patient] : [])
-                } else if (searchName) {
-                    const { patients } = await getPatientsByName(searchName)
-                    setFoundPatients(patients)
-                }
-            } catch (error) {
-                console.error(error)
-                setSearchError(
-                    "Erro ao buscar paciente. Verifique os dados ou tente novamente.",
-                )
-                setFoundPatients([])
-            } finally {
-                setIsLoading(false)
-            }
+        if (filters.name) {
+          state.set("name", filters.name)
+        } else {
+          state.delete("name")
         }
 
-        const timer = setTimeout(() => {
-            handleSearch()
-        }, 500)
-
-        return () => {
-            clearTimeout(timer)
-            setIsLoading(false)
+        if (filters.cpf) {
+          state.set("cpf", filters.cpf)
+        } else {
+          state.delete("cpf")
         }
-    }, [cpf, name])
 
-    return (
-        <div className="space-y-3">
-            <div className="space-y-3">
-                <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 flex-1">
-                        <Input
-                            placeholder="Digite o CPF do paciente..."
-                            value={cpf}
-                            onChange={handleCpfChange}
-                            className="h-9"
-                        />
+        if (filters.status && filters.status !== "all") {
+          state.set("status", filters.status)
+        } else {
+          state.delete("status")
+        }
 
-                        <Input
-                            placeholder="Digite o Nome do paciente..."
-                            value={name}
-                            onChange={handleNameChange}
-                            className="h-9"
-                        />
+        // O PULO DO GATO: Só reseta a página se os filtros mudaram
+        if (hasChanged) {
+          state.set("pageIndex", "0")
+        }
 
-                        <Select value={status} onValueChange={setStatus} disabled>
-                            <SelectTrigger className="h-9">
-                                <SelectValue placeholder="Selecione o status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Todos os status</SelectItem>
-                                <SelectItem value="active">Em acompanhamento</SelectItem>
-                                <SelectItem value="scheduled">Sessão agendada</SelectItem>
-                                <SelectItem value="completed">Sessão concluída</SelectItem>
-                                <SelectItem value="paused">Em pausa</SelectItem>
-                                <SelectItem value="discharged">Alta terapêutica</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+        return state
+      })
+    }, 500)
 
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <Button
-                                size="sm"
-                                className="gap-2 w-full lg:w-auto shrink-0 cursor-pointer"
-                            >
-                                <UserRoundPlus className="h-4 w-4" />
-                                Cadastrar paciente
-                            </Button>
-                        </DialogTrigger>
-                        <RegisterPatients />
-                    </Dialog>
-                </div>
-            </div>
+    return () => clearTimeout(timeoutId)
+  }, [filters, setSearchParams]) // O array de dependências garante que o effect rode
 
-            <div className="mt-4 text-sm">
-                {isLoading && <p className="text-muted-foreground">Buscando...</p>}
+  return (
+    <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
+      <form className="flex flex-col lg:flex-row gap-2 flex-1 lg:items-center">
+        <Input
+          placeholder="Buscar por CPF..."
+          className="h-8 w-full lg:w-auto"
+          {...register("cpf")}
+        />
 
-                {searchError && <p className="text-red-500">{searchError}</p>}
+        <Input
+          placeholder="Buscar por Nome..."
+          className="h-8 w-full lg:w-[320px]"
+          {...register("name")}
+        />
 
-                {!isLoading &&
-                    !searchError &&
-                    (cpf.trim() || name.trim()) &&
-                    foundPatients.length === 0 && (
-                        <p className="text-yellow-500">Nenhum paciente encontrado.</p>
-                    )}
+        <Controller
+          name="status"
+          control={control}
+          render={({ field: { name, onChange, value, disabled } }) => {
+            return (
+              <Select
+                defaultValue="all"
+                name={name}
+                onValueChange={onChange}
+                value={value}
+                disabled={disabled}
+              >
+                <SelectTrigger className="h-8 w-full lg:w-[180px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="active">Em acompanhamento</SelectItem>
+                  <SelectItem value="scheduled">Sessão agendada</SelectItem>
+                  <SelectItem value="completed">Sessão concluída</SelectItem>
+                  <SelectItem value="paused">Em pausa</SelectItem>
+                  <SelectItem value="discharged">Alta terapêutica</SelectItem>
+                </SelectContent>
+              </Select>
+            )
+          }}
+        />
+      </form>
 
-                {foundPatients.length > 0 && (
-                    <div className="space-y-2">
-                        <p className="font-semibold">Paciente(s) Encontrado(s):</p>
-                        {foundPatients.map((patient) => (
-                            <div key={patient.id} className="p-3 border rounded-md bg-muted">
-                                <p>
-                                    Nome: {patient.firstName} {patient.lastName}
-                                </p>
-                                <p>CPF: {patient.cpf}</p>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-        </div>
-    )
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button size="sm" className="gap-2 w-full lg:w-auto shrink-0 cursor-pointer">
+            <UserRoundPlus className="h-4 w-4" />
+            Cadastrar paciente
+          </Button>
+        </DialogTrigger>
+        <RegisterPatients />
+      </Dialog>
+    </div>
+  )
 }
