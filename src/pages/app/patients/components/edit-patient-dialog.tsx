@@ -6,6 +6,8 @@ import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { ChevronDownIcon, CloudDownload } from "lucide-react"
 import { toast } from "sonner"
+// Importação simulada do AxiosError, assumindo que está disponível no seu ambiente
+// import { AxiosError } from "axios" 
 
 import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -20,7 +22,6 @@ import {
     FieldSet,
     FieldLabel,
     FieldLegend,
-    FieldDescription,
     FieldSeparator,
 } from "@/components/ui/field"
 
@@ -68,8 +69,6 @@ export function EditPatient({ patient, onClose }: EditPatientProps) {
     )
 
     const [gender, setGender] = useState(patient.gender || "FEMININE")
-    const [role, setRole] = useState(patient.role || "PATIENT")
-    const [isActive, setIsActive] = useState(patient.isActive ?? true)
 
     const [errors, setErrors] = useState<FormErrors>({})
 
@@ -81,8 +80,28 @@ export function EditPatient({ patient, onClose }: EditPatientProps) {
             onClose?.()
         },
         onError: (err: any) => {
-            const msg = err?.response?.data?.message || "Erro ao atualizar paciente."
-            toast.error(msg)
+            // --- INÍCIO DA LÓGICA DE TRATAMENTO DE ERROS COM DETALHES DA API ---
+            let errorMessage = "Erro ao atualizar paciente."
+
+            // Tenta verificar se é um erro de resposta HTTP
+            if (err.response) {
+                // Tenta extrair a mensagem de erro do corpo da resposta
+                const apiMessage = err.response.data?.message || err.response.data?.error
+
+                if (err.response.status === 409) {
+                    errorMessage = apiMessage || "Conflito: CPF ou Email já cadastrado para outro paciente."
+                } else if (apiMessage) {
+                    errorMessage = apiMessage
+                } else {
+                    errorMessage = `Erro (${err.response.status}): Falha na comunicação com o servidor.`
+                }
+            } else {
+                // Se não houver response, usa a mensagem genérica
+                errorMessage = "Erro de rede ou desconhecido. Tente novamente."
+            }
+
+            toast.error(errorMessage)
+            // --- FIM DA LÓGICA DE TRATAMENTO DE ERROS COM DETALHES DA API ---
         },
     })
 
@@ -122,24 +141,21 @@ export function EditPatient({ patient, onClose }: EditPatientProps) {
             firstName,
             lastName,
             email: email || undefined,
+            // A senha só é enviada se preenchida
             password: password || undefined,
             phoneNumber: rawPhone,
             profileImageUrl: (fd.get("profileImageUrl") as string) || undefined,
             dateOfBirth: date!,
             cpf: rawCpf,
-            role: role as any,
             gender: gender as any,
-            isActive,
         }
 
         await updatePatientFn(data)
     }
 
     return (
-        // 1. MUDANÇA AQUI: Adicionado 'p-0' e 'flex flex-col' para controlar o layout
         <DialogContent className="max-h-[85vh] max-w-2xl p-0 flex flex-col gap-0">
 
-            {/* 2. MUDANÇA AQUI: Header fixo no topo com padding próprio */}
             <DialogHeader className="p-6 pb-2 shrink-0">
                 <DialogTitle>Editar Paciente</DialogTitle>
                 <DialogDescription>
@@ -147,7 +163,6 @@ export function EditPatient({ patient, onClose }: EditPatientProps) {
                 </DialogDescription>
             </DialogHeader>
 
-            {/* 3. MUDANÇA AQUI: O Form agora é a área que rola (overflow-y-auto) e ocupa o espaço restante (flex-1) */}
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 pb-6">
                 <FieldGroup className="mt-2">
 
@@ -265,12 +280,9 @@ export function EditPatient({ patient, onClose }: EditPatientProps) {
                     <FieldSeparator />
 
                     <FieldSet>
-                        <FieldLegend>Configurações do Perfil</FieldLegend>
-                        <FieldDescription>Informações internas do sistema</FieldDescription>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
                             <Field>
-                                <FieldLabel>Gênero</FieldLabel>
+                                <FieldLabel>Gênero do Paciente</FieldLabel>
                                 <Select
                                     value={gender}
                                     onValueChange={(value) =>
@@ -286,57 +298,14 @@ export function EditPatient({ patient, onClose }: EditPatientProps) {
                                 </Select>
                             </Field>
 
-                            <Field>
-                                <FieldLabel>Perfil</FieldLabel>
-                                <Select
-                                    value={role}
-                                    onValueChange={(value) => setRole(value as any)}
-                                >
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="PATIENT">Paciente</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-
-                            <Field>
-                                <FieldLabel>Ativo?</FieldLabel>
-                                <Select
-                                    value={isActive ? "true" : "false"}
-                                    onValueChange={(v) => setIsActive(v === "true")}
-                                >
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="true">Sim</SelectItem>
-                                        <SelectItem value="false">Não</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-
                         </div>
                     </FieldSet>
 
-                    <FieldSeparator />
-
-                    {/* Foto */}
-                    <FieldSet>
-                        <FieldLegend>Foto</FieldLegend>
-                        <Field>
-                            <FieldLabel htmlFor="profileImageUrl">URL da Foto</FieldLabel>
-                            <Input
-                                id="profileImageUrl"
-                                name="profileImageUrl"
-                                defaultValue={patient.profileImageUrl}
-                            />
-                        </Field>
-                    </FieldSet>
 
                     <FieldSeparator />
 
-                    {/* Documentos */}
                     <FieldSet>
-                        <FieldLegend>Documentos</FieldLegend>
-                        <FieldDescription>Arquivos enviados pelo paciente</FieldDescription>
+                        <FieldLegend>Documentos do Paciente</FieldLegend>
 
                         <Empty className="border border-dashed py-6">
                             <EmptyHeader>

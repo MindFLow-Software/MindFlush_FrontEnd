@@ -6,6 +6,7 @@ import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { ChevronDownIcon, CloudUpload } from "lucide-react"
 import { toast } from "sonner"
+import { AxiosError } from "axios" // Importar o tipo AxiosError para tipagem
 // ⚠️ Importar cn se estiver usando
 // import { cn } from "@/lib/utils" 
 
@@ -52,7 +53,7 @@ export function RegisterPatients() {
     const [cpf, setCpf] = useState("")
     const [phone, setPhone] = useState("")
     const [gender, setGender] = useState("FEMININE")
-    const [role, setRole] = useState("PATIENT")
+    // REMOVIDO: const [role, setRole] = useState("PATIENT")
     const [isActive, setIsActive] = useState(true)
 
     const [errors, setErrors] = useState<FormErrors>({})
@@ -72,9 +73,29 @@ export function RegisterPatients() {
 
             return { previous }
         },
-        onError: (_err, _vars, ctx) => {
+        onError: (err, _vars, ctx) => { // O tipo 'err' é inferido ou pode ser tipado como 'AxiosError'
             if (ctx?.previous) queryClient.setQueryData(["patients"], ctx.previous)
-            toast.error("Erro ao cadastrar paciente.")
+
+            // --- INÍCIO DA LÓGICA DE TRATAMENTO DE ERROS COM DETALHES DA API ---
+            let errorMessage = "Erro ao cadastrar paciente."
+
+            // Verifica se é um erro do Axios e se há uma resposta com dados
+            if (err instanceof AxiosError && err.response) {
+                // Tenta extrair a mensagem do corpo da resposta (padrão de muitas APIs)
+                const apiMessage = err.response.data?.message || err.response.data?.error
+
+                if (err.response.status === 409) {
+                    errorMessage = apiMessage || "Conflito: CPF ou Email já cadastrado no sistema."
+                } else if (apiMessage) {
+                    errorMessage = apiMessage
+                } else {
+                    errorMessage = `Erro (${err.response.status}): Falha na comunicação com o servidor.`
+                }
+            } else {
+                errorMessage = "Erro desconhecido. Tente novamente."
+            }
+
+            toast.error(errorMessage)
         },
         onSuccess: () => toast.success("Paciente cadastrado com sucesso!"),
         onSettled: () => queryClient.invalidateQueries({ queryKey: ["patients"] })
@@ -122,21 +143,29 @@ export function RegisterPatients() {
             profileImageUrl: (fd.get("profileImageUrl") as string) || undefined,
             dateOfBirth: date!,
             cpf: rawCpf,
-            role: role as any,
+            role: "PATIENT" as any,
             gender: gender as any,
             isActive,
             expertise: "NONE" as any,
         }
 
-        await registerPatientFn(data)
+        try {
+            await registerPatientFn(data)
 
-        form.reset()
-        setCpf("")
-        setPhone("")
-        setDate(undefined)
-        setGender("FEMININE")
-        setRole("PATIENT")
-        setIsActive(true)
+            // Resetar o formulário apenas em caso de sucesso
+            form.reset()
+            setCpf("")
+            setPhone("")
+            setDate(undefined)
+            setGender("FEMININE")
+            setIsActive(true)
+
+        } catch (error) {
+            // O erro já é tratado no bloco onError do useMutation
+            // Não é necessário fazer mais nada aqui, apenas evitar o reset
+            console.error("Erro no cadastro:", error);
+        }
+
     }
 
     return (
@@ -265,10 +294,10 @@ export function RegisterPatients() {
                     <FieldSeparator />
 
                     <FieldSet>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
 
                             <Field>
-                                <FieldLabel>Gênero</FieldLabel>
+                                <FieldLabel>Gênero do Paciente</FieldLabel>
                                 <Select value={gender} onValueChange={setGender}>
                                     <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                                     <SelectContent>
@@ -279,45 +308,12 @@ export function RegisterPatients() {
                                 </Select>
                             </Field>
 
-                            <Field>
-                                <FieldLabel>Perfil</FieldLabel>
-                                <Select value={role} onValueChange={setRole}>
-                                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="PATIENT">Paciente</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-
-                            {/* <Field>
-                                <FieldLabel>Ativo?</FieldLabel>
-                                <Select value={isActive ? "true" : "false"} onValueChange={(v) => setIsActive(v === "true")}>
-                                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="true">Sim</SelectItem>
-                                        <SelectItem value="false">Não</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </Field> */}
-
                         </div>
                     </FieldSet>
 
-                    <FieldSeparator />
 
                     <FieldSet>
-                        <FieldLegend>Foto</FieldLegend>
-
-                        <Field>
-                            <FieldLabel htmlFor="profileImageUrl">URL da Foto</FieldLabel>
-                            <Input id="profileImageUrl" name="profileImageUrl" placeholder="https://exemplo.com/foto.jpg" />
-                        </Field>
-                    </FieldSet>
-
-                    <FieldSeparator />
-
-                    <FieldSet>
-                        <FieldLegend>Documentos</FieldLegend>
+                        <FieldLegend>Documentos do Paciente</FieldLegend>
 
                         <Empty className="border border-dashed py-6">
                             <EmptyHeader>
