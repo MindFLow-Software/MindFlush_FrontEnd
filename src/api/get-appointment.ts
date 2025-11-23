@@ -27,6 +27,7 @@ export interface Appointment {
 
   // RELAÇÕES ANINHADAS (Resolve erro 'patient' e 'psychologistId' no frontend)
   patient: {
+    id(id: any): [any, any]
     firstName: string
     lastName: string
   }

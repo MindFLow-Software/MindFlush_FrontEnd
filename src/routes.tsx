@@ -8,7 +8,7 @@ import { NotFound } from './pages/404'
 import { SignIn } from './pages/auth/sign-in'
 import { SignUp } from './pages/auth/sign-up'
 import { AppointmentsRoom } from './pages/app/video-room/appoinmets-room'
-import { AppointmentsPage } from './pages/app/appointment/appointment-list'
+import { AppointmentsList } from './pages/app/appointment/appointment-list'
 import { MockPsychologistProfilePage } from './pages/app/account/account'
 import { DashboardFinance } from './pages/app/finance/dashboard-finance'
 
@@ -55,7 +55,7 @@ export const router = createBrowserRouter([
       },
       {
         path: '/appointment',
-        element: <AppointmentsPage />,
+        element: <AppointmentsList />,
       },
       {
         path: '/account',

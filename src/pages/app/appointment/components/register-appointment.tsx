@@ -27,7 +27,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 
 import { registerAppointment, type RegisterAppointmentRequest } from "@/api/create-appointment"
-import { getPatientsByName } from "@/api/get-patient-by-name"
+import { getPatients } from "@/api/get-patients"
+
+const MAX_NOTE_LENGTH = 30
 
 export function RegisterAppointment() {
     const queryClient = useQueryClient()
@@ -39,14 +41,22 @@ export function RegisterAppointment() {
     useEffect(() => {
         const fetchPatients = async () => {
             try {
-                const data = await getPatientsByName("")
+                const data = await getPatients({
+                    pageIndex: 0,
+                    perPage: 1000,
+                    status: null
+                })
+
                 const formatted = data.patients.map((p) => ({
                     id: p.id,
                     name: `${p.firstName} ${p.lastName}`,
                 }))
+
                 setPatients(formatted)
-            } catch {
+            } catch (error) {
+                console.error(error)
                 setPatients([])
+                toast.error("Erro ao carregar a lista de pacientes.")
             }
         }
         fetchPatients()
@@ -103,7 +113,6 @@ export function RegisterAppointment() {
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-4">
-                    {/* Paciente */}
                     <div className="space-y-2">
                         <label htmlFor="patient" className="text-sm font-medium">
                             Paciente
@@ -112,7 +121,7 @@ export function RegisterAppointment() {
                             <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Selecione o paciente" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="max-h-[300px]">
                                 {patients.length > 0 ? (
                                     patients.map((p) => (
                                         <SelectItem key={p.id} value={p.id}>
@@ -188,7 +197,7 @@ export function RegisterAppointment() {
                         </Popover>
                     </div>
 
-                    {/* Notas */}
+                    {/* Notas (Aplicado o estilo solicitado) */}
                     <div className="space-y-2">
                         <label htmlFor="notes" className="text-sm font-medium">
                             Notas (opcional)
@@ -199,23 +208,23 @@ export function RegisterAppointment() {
                             placeholder="Adicione observações..."
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
-                            maxLength={255}
+                            maxLength={MAX_NOTE_LENGTH}
                             rows={4}
-                            className="w-full resize-none overflow-y-auto wrap-break-word whitespace-pre-wrap"
+                            className="w-full resize-none overflow-y-auto"
                             style={{
-                                wordWrap: "break-word",
+                                wordBreak: "break-all",
                                 overflowWrap: "break-word",
                                 whiteSpace: "pre-wrap",
                             }}
                         />
                         <div className="text-xs text-muted-foreground text-right">
-                            {notes.length}/255 caracteres
+                            {notes.length}/{MAX_NOTE_LENGTH} caracteres
                         </div>
                     </div>
                 </div>
 
                 <div className="pt-2">
-                    <Button type="submit" className="w-full" disabled={isPending}>
+                    <Button type="submit" className="w-full cursor-pointer" disabled={isPending}>
                         {isPending ? "Criando..." : "Criar Agendamento"}
                     </Button>
                 </div>

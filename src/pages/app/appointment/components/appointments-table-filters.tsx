@@ -1,163 +1,120 @@
 "use client"
 
-import type React from "react"
 import { useState, useEffect } from "react"
 import { CalendarPlus } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { useSearchParams } from "react-router-dom"
+import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
-import { Dialog, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { RegisterAppointment } from "./register-appointment"
 
-import type { Appointment } from "@/api/get-appointment"
+// 1. Definição do Schema de Filtros
+const appointmentsFilterSchema = z.object({
+    cpf: z.string().optional(),
+    name: z.string().optional(),
+    status: z.string().optional(),
+})
+
+type AppointmentsFilterSchema = z.infer<typeof appointmentsFilterSchema>
 
 export function AppointmentsTableFilters() {
-    const [cpf, setCpf] = useState("")
-    const [name, setName] = useState("")
-    const [status, setStatus] = useState("all")
+    const [searchParams, setSearchParams] = useSearchParams()
+    const [isRegisterOpen, setIsRegisterOpen] = useState(false)
 
-    const [isLoading, setIsLoading] = useState(false)
-    const [searchError, setSearchError] = useState<string | null>(null)
-    const [foundAppointments, setFoundAppointments] = useState<Appointment[]>([])
+    // 2. Recupera valores iniciais da URL
+    const cpf = searchParams.get("cpf")
+    const name = searchParams.get("name")
+    const status = searchParams.get("status")
 
-    const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value
-        setCpf(value)
-        if (value) setName("")
+    // 3. Configura o React Hook Form
+    const { register, watch, setValue } = useForm<AppointmentsFilterSchema>({
+        resolver: zodResolver(appointmentsFilterSchema),
+        defaultValues: {
+            cpf: cpf ?? "",
+            name: name ?? "",
+            status: status ?? "all",
+        },
+    })
+
+    // 4. Observa as mudanças nos campos
+    const watchedCpf = watch("cpf")
+    const watchedName = watch("name")
+    const watchedStatus = watch("status")
+
+    // 5. Função que atualiza a URL
+    function applyFilters({ cpf, name, status }: AppointmentsFilterSchema) {
+        setSearchParams((state) => {
+            if (cpf) state.set("cpf", cpf)
+            else state.delete("cpf")
+
+            if (name) state.set("name", name)
+            else state.delete("name")
+
+            if (status && status !== "all") state.set("status", status)
+            else state.delete("status")
+
+            state.set("pageIndex", "0") // Reseta para a primeira página ao filtrar
+            return state
+        })
     }
 
-    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value
-        setName(value)
-        if (value) setCpf("")
-    }
-
+    // 7. Efeito de Debounce (Executa a busca após o usuário parar de digitar)
     useEffect(() => {
-        const handleSearch = async () => {
-            const searchCpf = cpf.trim()
-            const searchName = name.trim()
+        const timeout = setTimeout(() => {
+            applyFilters({
+                cpf: watchedCpf,
+                name: watchedName,
+                status: watchedStatus,
+            })
+        }, 400) // Delay de 400ms
 
-            if (!searchCpf && !searchName) {
-                setSearchError(null)
-                setFoundAppointments([])
-                setIsLoading(false)
-                return
-            }
+        return () => clearTimeout(timeout)
+    }, [watchedCpf, watchedName, watchedStatus])
 
-            setIsLoading(true)
-            setSearchError(null)
-            setFoundAppointments([])
-
-            try {
-            } catch (error) {
-                console.error(error)
-                setSearchError("Erro ao buscar agendamentos. Tente novamente.")
-                setFoundAppointments([])
-            } finally {
-                setIsLoading(false)
-            }
+    // Lógica visual para limpar campos conflitantes (se preencher CPF, limpa Nome, etc - opcional, mantido do seu exemplo original)
+    useEffect(() => {
+        if (watchedCpf && watchedName) {
+           // Se quiser manter comportamento exclusivo, descomente abaixo:
+           // if (document.activeElement?.getAttribute('name') === 'cpf') setValue('name', '')
+           // else setValue('cpf', '')
         }
-
-        const timer = setTimeout(() => {
-            handleSearch()
-        }, 500)
-
-        return () => {
-            clearTimeout(timer)
-            setIsLoading(false)
-        }
-    }, [cpf, name])
+    }, [watchedCpf, watchedName, setValue])
 
     return (
-        <div className="space-y-3">
-            <div className="space-y-3">
-                <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 flex-1">
-                        <Input
-                            placeholder="Buscar por CPF do paciente..."
-                            value={cpf}
-                            onChange={handleCpfChange}
-                            className="h-9"
-                        />
+        <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_180px_auto] gap-2 flex-1 items-center">
 
-                        <Input
-                            placeholder="Buscar por Nome do paciente..."
-                            value={name}
-                            onChange={handleNameChange}
-                            className="h-9"
-                        />
-
-                        <Select value={status} onValueChange={setStatus}>
-                            <SelectTrigger className="h-9">
-                                <SelectValue placeholder="Status da sessão" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Todos os status</SelectItem>
-                                <SelectItem value="SCHEDULED">Agendado</SelectItem>
-                                <SelectItem value="IN_PROGRESS">Em andamento</SelectItem>
-                                <SelectItem value="COMPLETED">Concluído</SelectItem>
-                                <SelectItem value="CANCELED">Cancelado</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <Button
-                                size="sm"
-                                className="gap-2 w-full lg:w-auto shrink-0 cursor-pointer"
-                            >
-                                <CalendarPlus className="h-4 w-4" />
-                                Novo agendamento
-                            </Button>
-                        </DialogTrigger>
-
-                        <RegisterAppointment />
-                    </Dialog>
-
-                </div>
+                <Input
+                    placeholder="Buscar por Nome..."
+                    className="h-9"
+                    {...register("name")}
+                />             
             </div>
 
-            <div className="mt-4 text-sm">
-                {isLoading && <p className="text-muted-foreground">Buscando...</p>}
-                {searchError && <p className="text-red-500">{searchError}</p>}
-
-                {!isLoading &&
-                    !searchError &&
-                    (cpf.trim() || name.trim()) &&
-                    foundAppointments.length === 0 && (
-                        <p className="text-yellow-500">Nenhum agendamento encontrado.</p>
+            {/* Botão de Novo Agendamento */}
+            <div className="flex items-center">
+                <Dialog open={isRegisterOpen} onOpenChange={setIsRegisterOpen}>
+                    <DialogTrigger asChild>
+                        <Button
+                            size="sm"
+                            className="gap-2 w-full lg:w-auto shrink-0 cursor-pointer"
+                        >
+                            <CalendarPlus className="h-4 w-4" />
+                            Novo agendamento
+                        </Button>
+                    </DialogTrigger>
+                    
+                    {isRegisterOpen && (
+                         <DialogContent>
+                            <RegisterAppointment />
+                         </DialogContent>
                     )}
-
-                {foundAppointments.length > 0 && (
-                    <div className="space-y-2">
-                        <p className="font-semibold">Agendamento(s) Encontrado(s):</p>
-                        {foundAppointments.map((appt) => (
-                            <div key={appt.id} className="p-3 border rounded-md bg-muted">
-                                <p>
-                                    Paciente: {appt.patientName ?? "—"}
-                                </p>
-                                <p>Psicólogo: {appt.psychologistId ?? "—"}</p>
-                                <p>Diagnóstico: {appt.diagnosis ?? "—"}</p>
-                                <p>Status: {appt.status}</p>
-                                <p>
-                                    Data:{" "}
-                                    {new Date(appt.scheduledAt).toLocaleString("pt-BR", {
-                                        dateStyle: "short",
-                                        timeStyle: "short",
-                                    })}
-                                </p>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                </Dialog>
             </div>
         </div>
     )
