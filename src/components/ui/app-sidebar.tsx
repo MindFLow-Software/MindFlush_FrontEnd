@@ -31,7 +31,6 @@ const navMain = [
         title: "Home",
         url: "#",
         icon: Home,
-        isActive: true,
         items: [
             { title: "Dashboard", url: "/dashboard" },
         ],
