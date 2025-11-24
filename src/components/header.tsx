@@ -1,6 +1,5 @@
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
-import { ThemeToggle } from "./theme/theme-toggle"
 
 export function Header() {
   return (
@@ -10,9 +9,6 @@ export function Header() {
       <div className="flex flex-1 items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="font-semibold">MindFlush</span>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <ThemeToggle />
         </div>
       </div>
     </header>

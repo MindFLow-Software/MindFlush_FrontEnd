@@ -1,168 +1,248 @@
 "use client"
 
 import { useState } from "react"
-import { Trash2, Pen } from "lucide-react"
+import { Search, Trash2, UserPen, Loader2, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
-import { Skeleton } from "@/components/ui/skeleton"
-import {
-    Dialog,
-} from "@/components/ui/dialog"
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { TableCell, TableRow } from "@/components/ui/table"
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
+import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
 
-import { deleteAppointment } from "@/api/delete-appointment"
+// Importe seus componentes de edição se existirem
 import { EditAppointment } from "./edit-appointment-dialog"
-import type { Appointment } from "@/api/get-appointment"
-import { DeleteAppointmentDialog } from "./delete-appointment-dialog"
 
-interface AppointmentsTableProps {
-    appointments: Appointment[]
-    isLoading: boolean
-    perPage?: number
+// APIs reais
+import { deleteAppointment } from "@/api/delete-appointment"
+import type { Appointment, AppointmentStatus } from "@/api/get-appointment"
+
+// Mock temporário para iniciar (substitua pela importação real quando tiver)
+async function startAppointment(_id: string) {
+    await new Promise(resolve => setTimeout(resolve, 1000))
 }
 
-export function AppointmentsTable({
-    appointments,
-    isLoading,
-    perPage = 10,
-}: AppointmentsTableProps) {
-    return (
-        <div className="rounded-md border">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Paciente</TableHead>
-                        <TableHead>Serviço</TableHead>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="w-[120px]">Opções</TableHead>
-                    </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                    {isLoading ? (
-                        Array.from({ length: perPage }).map((_, i) => (
-                            <TableRow key={i}>
-                                <TableCell colSpan={7}>
-                                    <Skeleton className="h-8 w-full" />
-                                </TableCell>
-                            </TableRow>
-                        ))
-                    ) : appointments.length > 0 ? (
-                        appointments.map((a) => (
-                            <AppointmentsRowItem key={a.id} appointment={a} />
-                        ))
-                    ) : (
-                        <TableRow>
-                            <TableCell
-                                colSpan={7}
-                                className="text-center text-muted-foreground py-6"
-                            >
-                                Nenhum agendamento encontrado.
-                            </TableCell>
-                        </TableRow>
-                    )}
-                </TableBody>
-            </Table>
-        </div>
-    )
+interface AppointmentProps {
+    appointment: Appointment
 }
 
-function AppointmentsRowItem({ appointment }: { appointment: Appointment }) {
-    const { id, scheduledAt, status, patient } = appointment
+function traduzirStatus(status: AppointmentStatus): { texto: string; estilo: string } {
+    switch (status) {
+        case "SCHEDULED": return { texto: "Agendado", estilo: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" }
+        case "ATTENDING": return { texto: "Em andamento", estilo: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" }
+        case "FINISHED": return { texto: "Concluído", estilo: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" }
+        case "CANCELED": return { texto: "Cancelado", estilo: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" }
+        case "NOT_ATTEND": return { texto: "Não compareceu", estilo: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" }
+        case "RESCHEDULED": return { texto: "Remarcado", estilo: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" }
+        default: return { texto: "Desconhecido", estilo: "bg-gray-100 text-gray-700" }
+    }
+}
 
+export function AppointmentsTableRow({ appointment }: AppointmentProps) {
+    const { id, patient, diagnosis, notes, scheduledAt, status } = appointment
+    const { texto, estilo } = traduzirStatus(status)
     const patientName = `${patient.firstName} ${patient.lastName}`
 
-    const serviceName = "Serviço" // ⚠️ ajuste conforme seu model
-
-    const [isEditOpen, setIsEditOpen] = useState(false)
-    const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
     const queryClient = useQueryClient()
 
-    const { mutateAsync: deleteFn, isPending: isDeleting } = useMutation({
+    // Mutation para Excluir/Cancelar
+    const { mutateAsync: deleteAppointmentFn, isPending: isDeleting } = useMutation({
         mutationFn: deleteAppointment,
         onSuccess: () => {
+            toast.success("Agendamento cancelado/excluído com sucesso!")
+            setIsDeleteDialogOpen(false)
             queryClient.invalidateQueries({ queryKey: ["appointments"] })
         },
+        onError: () => toast.error("Erro ao excluir agendamento.")
     })
+
+    // Mutation para Iniciar
+    const { mutateAsync: startAppointmentFn, isPending: isStarting } = useMutation({
+        mutationFn: startAppointment,
+        onSuccess: () => {
+            toast.success("Sessão iniciada!")
+            queryClient.invalidateQueries({ queryKey: ["appointments"] })
+        }
+    })
+
+    async function handleDelete() {
+        await deleteAppointmentFn(id)
+    }
+
+    const isPast = new Date(scheduledAt).getTime() < Date.now();
+    const canBeStarted = status === "SCHEDULED" && !isPast;
+    const canBeEdited = status !== "FINISHED" && status !== "CANCELED";
+    const canBeDeleted = true;
 
     return (
         <TableRow>
-            <TableCell>{patientName}</TableCell>
-
-            <TableCell>{serviceName}</TableCell>
-
+            {/* 🔍 Coluna de Detalhes */}
             <TableCell>
-                {new Date(scheduledAt).toLocaleDateString("pt-BR")}
-            </TableCell>
-
-            <TableCell>{status}</TableCell>
-
-            <TableCell>
-                <div className="flex items-center gap-2">
-                    {/* EDITAR */}
-                    <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                        {isEditOpen && (
-                            <EditAppointment
-                                appointment={appointment}
-                                onClose={() => setIsEditOpen(false)}
-                            />
-                        )}
-                    </Dialog>
-
-                    {/* EXCLUIR */}
-                    <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-                        {isDeleteOpen && (
-                            <DeleteAppointmentDialog
-                                isDeleting={isDeleting}
-                                onClose={() => setIsDeleteOpen(false)}
-                                onDelete={async () => await deleteFn(id)}
-                            />
-                        )}
-                    </Dialog>
-
+                <Dialog>
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    onClick={() => setIsEditOpen(true)}
-                                    className="cursor-pointer h-7 w-7 hover:bg-blue-100 hover:text-blue-600"
-                                >
-                                    <Pen className="h-4 w-4" />
-                                </Button>
+                                <DialogTrigger asChild>
+                                    <Button variant="outline" size="xs">
+                                        <Search className="h-3 w-3" />
+                                        <span className="sr-only">Detalhes da consulta</span>
+                                    </Button>
+                                </DialogTrigger>
                             </TooltipTrigger>
-                            <TooltipContent>Editar</TooltipContent>
+                            <TooltipContent side="top">Ver detalhes</TooltipContent>
                         </Tooltip>
+                    </TooltipProvider>
 
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    onClick={() => setIsDeleteOpen(true)}
-                                    className="cursor-pointer h-7 w-7 hover:bg-red-100 hover:text-red-600"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Excluir</TooltipContent>
-                        </Tooltip>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Detalhes do Agendamento</DialogTitle>
+                            <DialogDescription>Informações completas da consulta.</DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-3 text-sm">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <span className="font-semibold">Paciente:</span>
+                                <span className="col-span-3">{patientName}</span>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <span className="font-semibold">Diagnóstico:</span>
+                                <span className="col-span-3">{diagnosis}</span>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <span className="font-semibold">Data:</span>
+                                <span className="col-span-3">
+                                    {format(new Date(scheduledAt), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}
+                                </span>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <span className="font-semibold">Notas:</span>
+                                <span className="col-span-3 text-muted-foreground">{notes || "Nenhuma nota registrada."}</span>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            </TableCell>
+
+            <TableCell className="font-medium">{patientName}</TableCell>
+
+            <TableCell className="text-muted-foreground truncate max-w-[140px] text-sm">
+                {diagnosis}
+            </TableCell>
+
+            <TableCell className="text-muted-foreground truncate max-w-[140px] text-sm">
+                {notes || "—"}
+            </TableCell>
+
+            <TableCell className="text-muted-foreground">
+                {format(new Date(scheduledAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+            </TableCell>
+
+            <TableCell>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${estilo}`}>
+                    {texto}
+                </span>
+            </TableCell>
+
+            <TableCell>
+                <div className="flex items-center gap-2">
+                    <TooltipProvider>
+
+                        {/* Botão Iniciar */}
+                        {canBeStarted && (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-7 w-7"
+                                        onClick={() => startAppointmentFn(id)}
+                                        disabled={isStarting}
+                                    >
+                                        {isStarting ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowRight className="h-3 w-3 text-green-600" />}
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">Iniciar Sessão</TooltipContent>
+                            </Tooltip>
+                        )}
+
+                        {/* Botão Editar */}
+                        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <DialogTrigger asChild>
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            disabled={!canBeEdited}
+                                            className="cursor-pointer h-7 w-7 hover:bg-blue-100 hover:text-blue-600 transition-colors disabled:opacity-50"
+                                        >
+                                            <UserPen className="h-4 w-4" />
+                                            <span className="sr-only">Editar agendamento</span>
+                                        </Button>
+                                    </DialogTrigger>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">Editar agendamento</TooltipContent>
+                            </Tooltip>
+                            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                                <EditAppointment
+                                    appointment={appointment}
+                                    onClose={() => setIsEditDialogOpen(false)}
+                                />
+                            </DialogContent>
+                        </Dialog>
+
+                        {/* Botão Excluir/Cancelar */}
+                        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <DialogTrigger asChild>
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            disabled={!canBeDeleted}
+                                            className="cursor-pointer h-7 w-7 hover:bg-red-100 hover:text-red-600 transition-colors disabled:opacity-50"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                            <span className="sr-only">Excluir agendamento</span>
+                                        </Button>
+                                    </DialogTrigger>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">Excluir agendamento</TooltipContent>
+                            </Tooltip>
+
+                            <DialogContent className="max-w-md">
+                                <div className="space-y-4">
+                                    <DialogHeader>
+                                        <DialogTitle>Excluir agendamento</DialogTitle>
+                                        <DialogDescription>
+                                            Tem certeza que deseja excluir o agendamento de <strong>{patientName}</strong>?
+                                        </DialogDescription>
+                                    </DialogHeader>
+
+                                    <div className="flex justify-end gap-3 pt-2">
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setIsDeleteDialogOpen(false)}
+                                            disabled={isDeleting}
+                                        >
+                                            Cancelar
+                                        </Button>
+                                        <Button
+                                            variant="destructive"
+                                            onClick={handleDelete}
+                                            disabled={isDeleting}
+                                        >
+                                            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                                            {isDeleting ? "Excluindo..." : "Confirmar exclusão"}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+
                     </TooltipProvider>
                 </div>
             </TableCell>

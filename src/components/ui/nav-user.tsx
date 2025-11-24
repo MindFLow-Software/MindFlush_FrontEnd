@@ -8,12 +8,17 @@ import {
   CreditCard,
   LogOut,
   Sparkles,
+  Moon,
+  Sun,
+  Laptop,
+  Palette
 } from "lucide-react"
 import { useNavigate, Link } from "react-router-dom"
-import { toast } from "sonner" // Importação adicionada
+import { toast } from "sonner"
 
 import { signOut } from "@/api/sign-out"
 import { getProfile, type GetProfileResponse } from "@/api/get-profile"
+import { useTheme } from "../theme/theme-provider" // Importe o hook do tema aqui
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -24,6 +29,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,           // Novo
+  DropdownMenuSubTrigger,    // Novo
+  DropdownMenuSubContent,    // Novo
+  DropdownMenuPortal         // Novo (opcional, mas recomendado para evitar cortes)
 } from "@/components/ui/dropdown-menu"
 import {
   SidebarMenu,
@@ -36,6 +45,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 export function NavUser() {
   const { isMobile } = useSidebar()
   const navigate = useNavigate()
+  const { setTheme } = useTheme() // Usando o hook diretamente
 
   const {
     data: profile,
@@ -50,8 +60,7 @@ export function NavUser() {
   const { mutateAsync: signOutFn, isPending: isSigningOut } = useMutation({
     mutationFn: signOut,
     onSuccess: () => {
-      // Notificação de sucesso adicionada
-      toast.success('Logout realizado com sucesso!', { duration: 4000 }) 
+      toast.success('Logout realizado com sucesso!', { duration: 4000 })
       navigate("/", { replace: true })
     },
   })
@@ -59,8 +68,8 @@ export function NavUser() {
   const name = profile
     ? `${profile.firstName} ${profile.lastName}`
     : isError
-    ? "Erro ao carregar"
-    : "Carregando..."
+      ? "Erro ao carregar"
+      : "Carregando..."
 
   const avatar = profile?.profileImageUrl
   const initials = profile?.firstName?.[0]?.toUpperCase() || "?"
@@ -109,7 +118,7 @@ export function NavUser() {
 
           {!isLoading && profile && (
             <DropdownMenuContent
-              className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+              className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
               side={isMobile ? "bottom" : "right"}
               align="end"
               sideOffset={4}
@@ -148,6 +157,28 @@ export function NavUser() {
               <DropdownMenuSeparator />
 
               <DropdownMenuGroup>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Palette className="mr-2 h-4 w-4" />
+                    <span>Tema</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuItem onClick={() => setTheme("light")}>
+                        <Sun className="mr-2 h-4 w-4" />
+                        <span>Claro</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTheme("dark")}>
+                        <Moon className="mr-2 h-4 w-4" />
+                        <span>Escuro</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTheme("system")}>
+                        <Laptop className="mr-2 h-4 w-4" />
+                        <span>Sistema</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
                 <DropdownMenuItem asChild>
                   <Link to="/account" className="cursor-pointer">
                     <BadgeCheck className="mr-2 h-4 w-4" />
@@ -169,13 +200,14 @@ export function NavUser() {
               </DropdownMenuGroup>
 
               <DropdownMenuSeparator />
+
               <DropdownMenuItem
                 asChild
                 disabled={isSigningOut}
-                className="text-red-500 dark:text-red-400"
+                className="text-red-500 dark:text-red-400 focus:text-red-500 focus:bg-red-100 dark:focus:bg-red-900/20"
               >
                 <button
-                  className="w-full text-left cursor-pointer"
+                  className="w-full text-left cursor-pointer flex items-center"
                   onClick={() => signOutFn()}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
