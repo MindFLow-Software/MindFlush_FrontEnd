@@ -1,9 +1,11 @@
 "use client"
 
+import { useEffect } from "react"
 import { Helmet } from "react-helmet-async"
 import { useQuery } from "@tanstack/react-query"
 import { useSearchParams } from "react-router-dom"
 import { z } from "zod"
+
 
 import {
     Table,
@@ -14,15 +16,21 @@ import {
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 
-// Importe a linha da tabela individual e os filtros
 import { AppointmentsTableRow } from "./components/appointments-table-row"
 import { AppointmentsTableFilters } from "./components/appointments-table-filters"
 
 import { getAppointments, type GetAppointmentsResponse } from "@/api/get-appointment"
+import { useHeaderStore } from "@/hooks/use-header-store"
 
 export function AppointmentsList() {
+    const { setTitle } = useHeaderStore()
+
+    useEffect(() => {
+        setTitle('Meus Agendamentos')
+    }, [setTitle])
+
     const [searchParams] = useSearchParams()
-    // 1. Gerenciamento de Estado da URL (Paginação baseada em 1 na URL, 0 na API)
+
     const pageIndex = z.coerce
         .number()
         .int()
@@ -37,7 +45,6 @@ export function AppointmentsList() {
 
     const orderBy = (orderByParam === 'asc' || orderByParam === 'desc') ? orderByParam : 'desc'
 
-    // 2. Query de Agendamentos
     const { data: result, isLoading, isError } = useQuery<GetAppointmentsResponse, Error>({
         queryKey: ["appointments", pageIndex, status, orderBy],
         queryFn: () =>
@@ -71,7 +78,6 @@ export function AppointmentsList() {
 
                     {isLoading ? (
                         <div className="rounded-md border p-4 space-y-2">
-                            {/* Skeleton Loading - Simula as linhas da tabela */}
                             {Array.from({ length: 10 }).map((_, i) => (
                                 <Skeleton key={i} className="h-12 w-full" />
                             ))}
@@ -94,7 +100,6 @@ export function AppointmentsList() {
                                 <TableBody>
                                     {appointments.length > 0 ? (
                                         appointments.map((appointment) => (
-                                            // Renderiza a linha diretamente aqui, passando o objeto appointment
                                             <AppointmentsTableRow
                                                 key={appointment.id}
                                                 appointment={appointment}

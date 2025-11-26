@@ -9,8 +9,10 @@ import { PatientsByAgeChart } from "./components/patients-by-age-chart"
 import { PatientsByGenderChart } from "./components/patients-by-gender-chart"
 import { DateRangePicker } from "./components/date-range-picker"
 import { NewPatientsBarChart } from "./components/patients-amount-bar-chart"
-import { useState } from 'react'
+import { useState, useEffect } from 'react' // Adicionado useEffect
 import { subDays } from 'date-fns'
+import { useHeaderStore } from "@/hooks/use-header-store"
+
 
 interface DateRange {
     from: Date | undefined
@@ -24,8 +26,14 @@ const getInitialRange = (): DateRange => {
 }
 
 export function Dashboard() {
+    const { setTitle } = useHeaderStore()
+
     const [dateRange, setDateRange] = useState<DateRange>(getInitialRange)
     const { from: startDate, to: endDate } = dateRange
+
+    useEffect(() => {
+        setTitle('Dashboard')
+    }, [setTitle])
 
     const handleRangeChange = (range: DateRange) => {
         if (range.from && range.to) {

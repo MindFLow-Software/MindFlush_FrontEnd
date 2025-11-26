@@ -1,21 +1,25 @@
+import { useEffect } from "react"
 import { Helmet } from "react-helmet-async"
 import { useQuery } from "@tanstack/react-query"
 import { useSearchParams } from "react-router-dom"
-
 import { Pagination } from "@/components/pagination"
 import { PatientsTableFilters } from "./components/patients-table-filters"
-
-
 import { getPatients, type GetPatientsResponse } from "@/api/get-patients"
 import { PatientsTable } from "./components/patients-table-row"
+import { useHeaderStore } from "@/hooks/use-header-store"
 
 export function PatientsList() {
+    const { setTitle } = useHeaderStore()
+
+    useEffect(() => {
+        setTitle('Cadastro de Pacientes')
+    }, [setTitle])
+
     const [searchParams, setSearchParams] = useSearchParams()
 
     const pageIndex = Number(searchParams.get('pageIndex') ?? 0)
     const perPage = 12
 
-    // CORREÇÃO 2: Tratamento defensivo para evitar enviar strings vazias ou "null" para a API
     const name = searchParams.get('name') || undefined
     const cpf = searchParams.get('cpf') || undefined
     const status = searchParams.get('status') || undefined

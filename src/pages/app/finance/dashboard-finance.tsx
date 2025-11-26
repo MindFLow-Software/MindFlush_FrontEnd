@@ -1,12 +1,15 @@
 "use client"
 
+import { useEffect, useState } from 'react'
 import { Helmet } from "react-helmet-async"
+import { subDays } from 'date-fns'
+
+
 import { DiscountValueCard } from "./components/discount-value-card.tsx"
 import { CompletedTransactionsCard } from "./components/completed-transactions-card.tsx"
 import { DateRangePicker } from "./components/date-range-picker.tsx"
-import { useState } from 'react'
-import { subDays } from 'date-fns'
 import { TotalBalanceCard } from "./components/total-balance-card.tsx"
+import { useHeaderStore } from '@/hooks/use-header-store.ts'
 
 interface DateRange {
     from: Date | undefined
@@ -20,10 +23,18 @@ const getInitialRange = (): DateRange => {
 }
 
 export function DashboardFinance() {
-    const [] = useState<DateRange>(getInitialRange)
+    const { setTitle } = useHeaderStore()
+
+    useEffect(() => {
+        setTitle('Pagamentos')
+    }, [setTitle])
+
+    // Corrigido: desestruturação do state para permitir atualização
+    const [dateRange, setDateRange] = useState<DateRange>(getInitialRange)
 
     const handleRangeChange = (range: DateRange) => {
         if (range.from && range.to) {
+            setDateRange(range)
         }
     }
 
@@ -31,7 +42,6 @@ export function DashboardFinance() {
         <>
             <Helmet title="Pagamentos" />
             <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 sm:py-6">
-                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Pagamentos</h1>
 
                 <DateRangePicker
                     onChange={handleRangeChange}

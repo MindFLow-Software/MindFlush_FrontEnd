@@ -1,15 +1,18 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { Helmet } from "react-helmet-async"
+import { useQuery } from "@tanstack/react-query"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { AppointmentAddForm } from "./components/appointment-add-form"
-import { VideoRoomMock } from "./components/video-room"
-import { useQuery } from "@tanstack/react-query"
+
 import { getScheduledAppointment } from "@/api/get-scheduled-appointment"
 
+import { AppointmentAddForm } from "./components/appointment-add-form"
+import { VideoRoomMock } from "./components/video-room"
+import { useHeaderStore } from "@/hooks/use-header-store"
 
 export interface SessionItem {
     id: number
@@ -19,6 +22,12 @@ export interface SessionItem {
 }
 
 export function AppointmentsRoom() {
+    const { setTitle } = useHeaderStore()
+
+    useEffect(() => {
+        setTitle('Sala de Atendimento')
+    }, [setTitle])
+
     const [selectedPatientId, setSelectedPatientId] = useState("")
     const [notes, setNotes] = useState("")
 
@@ -31,14 +40,11 @@ export function AppointmentsRoom() {
 
     const currentAppointmentId = activeAppointmentData?.appointmentId || "";
 
-
-
     const handleFinishSession = useCallback(() => {
         if (!currentAppointmentId) {
             console.error("ERRO: Agendamento não ativo.");
             return;
         }
-        // 🚨 Lógica futura: Chamar a API de Finalizar Sessão (PATCH /appointments/:id/end)
         console.log(`Sessão finalizada para o Agendamento ID: ${currentAppointmentId}.`);
 
     }, [currentAppointmentId, notes])
@@ -54,7 +60,6 @@ export function AppointmentsRoom() {
 
     const handleSelectPatient = useCallback((patientId: string) => {
         setSelectedPatientId(patientId);
-        // O useQuery (passo 1) é acionado automaticamente aqui.
     }, [])
 
 
@@ -63,9 +68,6 @@ export function AppointmentsRoom() {
             <Helmet title="Sala de Atendimento" />
 
             <div className="flex flex-col gap-4 mt-4">
-                <h1 className="text-3xl font-bold tracking-tight">
-                    Sala de Atendimento
-                </h1>
 
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-1">
                     <div className="lg:col-span-1">
@@ -79,10 +81,10 @@ export function AppointmentsRoom() {
                             onFinishSession={handleFinishSession}
                             selectedPatientId={selectedPatientId}
                             onSelectPatient={handleSelectPatient}
-                            // 🔑 Passa o ID real para o componente filho
-                            currentAppointmentId={currentAppointmentId} onSessionStarted={function (): void {
-                                throw new Error("Function not implemented.")
-                            } } isSessionActive={false}                        />
+                            currentAppointmentId={currentAppointmentId}
+                            onSessionStarted={() => { }}
+                            isSessionActive={false}
+                        />
                     </div>
                 </div>
 
@@ -124,7 +126,6 @@ export function AppointmentsRoom() {
                         </div>
 
                         <Button
-                            // Habilita apenas se houver notas e um ID de consulta válido
                             disabled={!notes.trim() || !currentAppointmentId || isAppointmentLoading}
                             className="w-full sm:w-auto"
                         >
