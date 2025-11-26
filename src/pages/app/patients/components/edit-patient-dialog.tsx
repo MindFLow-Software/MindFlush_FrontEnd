@@ -1,43 +1,40 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { ChevronDownIcon, CloudDownload } from "lucide-react"
+import {
+    CalendarIcon,
+    Loader2,
+    Upload,
+    Eye,
+    EyeOff,
+    Mars,
+    Venus,
+    Users,
+    Camera,
+    CloudUpload
+} from "lucide-react"
 import { toast } from "sonner"
-// Importação simulada do AxiosError, assumindo que está disponível no seu ambiente
-// import { AxiosError } from "axios" 
 
 import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-
-import {
-    Field,
-    FieldGroup,
-    FieldSet,
-    FieldLabel,
-    FieldLegend,
-    FieldSeparator,
-} from "@/components/ui/field"
-
-import {
-    Empty,
-    EmptyHeader,
-    EmptyTitle,
-    EmptyDescription,
-    EmptyMedia,
-    EmptyContent,
-} from "@/components/ui/empty"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 import { formatCPF } from "@/utils/formatCPF"
 import { formatPhone } from "@/utils/formatPhone"
-
 import { updatePatient, type UpdatePatientData } from "@/api/upadate-patient"
+import { FieldSet } from "@/components/ui/field"
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+
+// Utilitário para classes
+const cn = (...classes: (string | boolean | undefined)[]) => classes.filter(Boolean).join(' ');
 
 interface FormErrors {
     firstName?: boolean
@@ -54,12 +51,11 @@ interface EditPatientProps {
     onClose?: () => void
 }
 
-const cn = (...classes: (string | boolean | undefined)[]) =>
-    classes.filter(Boolean).join(" ")
-
 export function EditPatient({ patient, onClose }: EditPatientProps) {
     const queryClient = useQueryClient()
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
+    // Estados iniciais carregados do prop 'patient'
     const [date, setDate] = useState<Date | undefined>(
         patient.dateOfBirth ? new Date(patient.dateOfBirth) : undefined
     )
@@ -67,43 +63,42 @@ export function EditPatient({ patient, onClose }: EditPatientProps) {
     const [phone, setPhone] = useState(
         patient.phoneNumber ? formatPhone(patient.phoneNumber) : ""
     )
-
     const [gender, setGender] = useState(patient.gender || "FEMININE")
 
+    // UI States
+    const [showPassword, setShowPassword] = useState(false)
+    const [previewImage, setPreviewImage] = useState<string | null>(patient.profileImageUrl || null)
     const [errors, setErrors] = useState<FormErrors>({})
 
     const { mutateAsync: updatePatientFn, isPending } = useMutation({
         mutationFn: updatePatient,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["patients"] })
-            toast.success("Paciente atualizado com sucesso!")
+            toast.success("Dados atualizados com sucesso!")
             onClose?.()
         },
         onError: (err: any) => {
-            // --- INÍCIO DA LÓGICA DE TRATAMENTO DE ERROS COM DETALHES DA API ---
             let errorMessage = "Erro ao atualizar paciente."
-
-            // Tenta verificar se é um erro de resposta HTTP
             if (err.response) {
-                // Tenta extrair a mensagem de erro do corpo da resposta
                 const apiMessage = err.response.data?.message || err.response.data?.error
-
                 if (err.response.status === 409) {
-                    errorMessage = apiMessage || "Conflito: CPF ou Email já cadastrado para outro paciente."
+                    errorMessage = apiMessage || "Conflito: CPF ou Email já cadastrado."
                 } else if (apiMessage) {
                     errorMessage = apiMessage
-                } else {
-                    errorMessage = `Erro (${err.response.status}): Falha na comunicação com o servidor.`
                 }
-            } else {
-                // Se não houver response, usa a mensagem genérica
-                errorMessage = "Erro de rede ou desconhecido. Tente novamente."
             }
-
             toast.error(errorMessage)
-            // --- FIM DA LÓGICA DE TRATAMENTO DE ERROS COM DETALHES DA API ---
         },
     })
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (file) {
+            const reader = new FileReader()
+            reader.onloadend = () => setPreviewImage(reader.result as string)
+            reader.readAsDataURL(file)
+        }
+    }
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
@@ -114,7 +109,6 @@ export function EditPatient({ patient, onClose }: EditPatientProps) {
 
         const rawCpf = cpf.replace(/\D/g, "")
         const rawPhone = phone.replace(/\D/g, "")
-
         const firstName = fd.get("firstName") as string
         const lastName = fd.get("lastName") as string
         const email = fd.get("email") as string
@@ -125,14 +119,14 @@ export function EditPatient({ patient, onClose }: EditPatientProps) {
         if (!firstName) newErrors.firstName = true
         if (!lastName) newErrors.lastName = true
         if (!email) newErrors.email = true
-        if (password && password.length < 6) newErrors.password = true
+        if (password && password.length < 6) newErrors.password = true // Valida senha apenas se preenchida
         if (!date) newErrors.dateOfBirth = true
         if (rawCpf.length < 11) newErrors.cpf = true
         if (rawPhone.length < 10) newErrors.phoneNumber = true
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors)
-            toast.error("Preencha corretamente os campos destacados.")
+            toast.error("Verifique os campos destacados.")
             return
         }
 
@@ -141,10 +135,9 @@ export function EditPatient({ patient, onClose }: EditPatientProps) {
             firstName,
             lastName,
             email: email || undefined,
-            // A senha só é enviada se preenchida
             password: password || undefined,
             phoneNumber: rawPhone,
-            profileImageUrl: (fd.get("profileImageUrl") as string) || undefined,
+            profileImageUrl: previewImage || undefined,
             dateOfBirth: date!,
             cpf: rawCpf,
             gender: gender as any,
@@ -154,186 +147,216 @@ export function EditPatient({ patient, onClose }: EditPatientProps) {
     }
 
     return (
-        <DialogContent className="max-h-[85vh] max-w-2xl p-0 flex flex-col gap-0">
-
-            <DialogHeader className="p-6 pb-2 shrink-0">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto sm:rounded-xl">
+            <DialogHeader>
                 <DialogTitle>Editar Paciente</DialogTitle>
                 <DialogDescription>
-                    Atualize os dados do paciente {patient.firstName} {patient.lastName}
+                    Atualize as informações do prontuário de {patient.firstName}.
                 </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 pb-6">
-                <FieldGroup className="mt-2">
+            <form onSubmit={handleSubmit} className="grid gap-6 py-4">
 
-                    <FieldSet>
-                        <FieldLegend>Dados Pessoais</FieldLegend>
+                {/* 1. SEÇÃO DE AVATAR */}
+                <div className="flex flex-col items-center justify-center gap-2">
+                    <div
+                        className="relative group cursor-pointer"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        <Avatar className="h-24 w-24 border-2 border-dashed border-muted-foreground/30 group-hover:border-primary transition-colors">
+                            <AvatarImage src={previewImage || ""} className="object-cover" />
+                            <AvatarFallback className="bg-muted">
+                                <Camera className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
+                            </AvatarFallback>
+                        </Avatar>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-                            <Field>
-                                <FieldLabel htmlFor="firstName">Primeiro Nome*</FieldLabel>
-                                <Input
-                                    id="firstName"
-                                    name="firstName"
-                                    maxLength={30}
-                                    defaultValue={patient.firstName}
-                                    className={cn(errors.firstName && "border-red-500 ring-red-500")}
-                                />
-                            </Field>
-
-                            <Field>
-                                <FieldLabel htmlFor="lastName">Último Nome*</FieldLabel>
-                                <Input
-                                    id="lastName"
-                                    name="lastName"
-                                    maxLength={50}
-                                    defaultValue={patient.lastName}
-                                    className={cn(errors.lastName && "border-red-500 ring-red-500")}
-                                />
-                            </Field>
-
-                            <Field>
-                                <FieldLabel htmlFor="cpf">CPF*</FieldLabel>
-                                <Input
-                                    id="cpf"
-                                    name="cpf"
-                                    maxLength={14}
-                                    value={cpf}
-                                    onChange={(e) => setCpf(formatCPF(e.target.value))}
-                                    className={cn(errors.cpf && "border-red-500 ring-red-500")}
-                                />
-                            </Field>
-
-                            <Field>
-                                <FieldLabel>Data de Nascimento*</FieldLabel>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            className={cn(
-                                                "w-full justify-between bg-transparent font-normal",
-                                                errors.dateOfBirth &&
-                                                "border-red-500 text-red-500 hover:text-red-500 hover:border-red-500"
-                                            )}
-                                        >
-                                            {date
-                                                ? format(date, "dd/MM/yyyy", { locale: ptBR })
-                                                : "Selecione a data"}
-                                            <ChevronDownIcon className="ml-2 h-4 w-4 opacity-50" />
-                                        </Button>
-                                    </PopoverTrigger>
-
-                                    <PopoverContent className="p-0 w-auto" align="start">
-                                        <Calendar
-                                            mode="single"
-                                            captionLayout="dropdown"
-                                            selected={date}
-                                            onSelect={setDate}
-                                            fromYear={1900}
-                                            toYear={new Date().getFullYear()}
-                                            locale={ptBR}
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                            </Field>
-
-                            <Field>
-                                <FieldLabel htmlFor="phoneNumber">Telefone*</FieldLabel>
-                                <Input
-                                    id="phoneNumber"
-                                    name="phoneNumber"
-                                    maxLength={15}
-                                    value={phone}
-                                    onChange={(e) => setPhone(formatPhone(e.target.value))}
-                                    className={cn(errors.phoneNumber && "border-red-500 ring-red-500")}
-                                />
-                            </Field>
-
-                            <Field>
-                                <FieldLabel htmlFor="email">Email*</FieldLabel>
-                                <Input
-                                    id="email"
-                                    name="email"
-                                    type="email"
-                                    defaultValue={patient.email}
-                                    className={cn(errors.email && "border-red-500 ring-red-500")}
-                                />
-                            </Field>
-
+                        <div className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-1.5 shadow-md group-hover:scale-110 transition-transform">
+                            <Upload className="h-3 w-3" />
                         </div>
+                    </div>
+                    <span className="text-xs text-muted-foreground">Clique para alterar foto</span>
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                    />
+                </div>
 
-                        <Field>
-                            <FieldLabel htmlFor="password">Senha</FieldLabel>
+                <div className="border-t my-2" />
+
+                {/* 2. DADOS PESSOAIS */}
+                <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        Dados Pessoais
+                    </h3>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="firstName" className={cn(errors.firstName && "text-red-500")}>Nome *</Label>
                             <Input
-                                id="password"
-                                name="password"
-                                type="password"
-                                placeholder="Deixe em branco para manter a atual"
-                                minLength={6}
-                                maxLength={30}
-                                className={cn(errors.password && "border-red-500 ring-red-500")}
+                                id="firstName" name="firstName"
+                                defaultValue={patient.firstName}
+                                className={cn(errors.firstName && "border-red-500 focus-visible:ring-red-500")}
                             />
-                        </Field>
-                    </FieldSet>
-
-                    <FieldSeparator />
-
-                    <FieldSet>
-                        <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
-                            <Field>
-                                <FieldLabel>Gênero do Paciente</FieldLabel>
-                                <Select
-                                    value={gender}
-                                    onValueChange={(value) =>
-                                        setGender(value as "FEMININE" | "MASCULINE" | "OTHER")
-                                    }
-                                >
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="FEMININE">Feminino</SelectItem>
-                                        <SelectItem value="MASCULINE">Masculino</SelectItem>
-                                        <SelectItem value="OTHER">Outro</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-
                         </div>
-                    </FieldSet>
 
+                        <div className="space-y-2">
+                            <Label htmlFor="lastName" className={cn(errors.lastName && "text-red-500")}>Sobrenome *</Label>
+                            <Input
+                                id="lastName" name="lastName"
+                                defaultValue={patient.lastName}
+                                className={cn(errors.lastName && "border-red-500 focus-visible:ring-red-500")}
+                            />
+                        </div>
 
-                    <FieldSeparator />
+                        <div className="space-y-2">
+                            <Label htmlFor="cpf" className={cn(errors.cpf && "text-red-500")}>CPF *</Label>
+                            <Input
+                                id="cpf" name="cpf" maxLength={14}
+                                value={cpf} onChange={(e) => setCpf(formatCPF(e.target.value))}
+                                className={cn(errors.cpf && "border-red-500 focus-visible:ring-red-500")}
+                            />
+                        </div>
 
+                        <div className="space-y-2">
+                            <Label className={cn(errors.dateOfBirth && "text-red-500")}>Data de Nascimento *</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant={"outline"}
+                                        className={cn(
+                                            "w-full justify-start text-left font-normal",
+                                            !date && "text-muted-foreground",
+                                            errors.dateOfBirth && "border-red-500 text-red-500"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {date ? format(date, "dd 'de' MMMM, yyyy", { locale: ptBR }) : <span>Selecione</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        captionLayout="dropdown" // Importante para ativar o dropdown
+                                        selected={date}
+                                        onSelect={setDate}
+                                        locale={ptBR}
+                                        fromYear={1900}
+                                        toYear={new Date().getFullYear()}
+                                        classNames={{
+                                            caption_dropdowns: "flex gap-2",
+                                        }}
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. CONTATO E ACESSO */}
+                <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 pt-2 border-t">
+                        Contato e Acesso
+                    </h3>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="phoneNumber" className={cn(errors.phoneNumber && "text-red-500")}>Telefone *</Label>
+                            <Input
+                                id="phoneNumber" name="phoneNumber" maxLength={15}
+                                value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))}
+                                className={cn(errors.phoneNumber && "border-red-500 focus-visible:ring-red-500")}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Gênero</Label>
+                            <Select
+                                value={gender}
+                                onValueChange={(val) => setGender(val as any)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="FEMININE">
+                                        <div className="flex items-center gap-2"><Venus className="h-4 w-4 text-rose-500" /> Feminino</div>
+                                    </SelectItem>
+                                    <SelectItem value="MASCULINE">
+                                        <div className="flex items-center gap-2"><Mars className="h-4 w-4 text-blue-500" /> Masculino</div>
+                                    </SelectItem>
+                                    <SelectItem value="OTHER">
+                                        <div className="flex items-center gap-2"><Users className="h-4 w-4 text-violet-500" /> Outro</div>
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="email" className={cn(errors.email && "text-red-500")}>Email *</Label>
+                            <Input
+                                id="email" name="email" type="email"
+                                defaultValue={patient.email}
+                                className={cn(errors.email && "border-red-500 focus-visible:ring-red-500")}
+                            />
+                        </div>
+
+                        <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="password" className={cn(errors.password && "text-red-500")}>Senha (Opcional)</Label>
+                            <div className="relative">
+                                <Input
+                                    id="password"
+                                    name="password"
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Deixe em branco para manter a atual"
+                                    className={cn("pr-10", errors.password && "border-red-500 focus-visible:ring-red-500")}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                    ) : (
+                                        <Eye className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 4. DOCUMENTOS (Placeholder) */}
+                <div className="pt-2 border-t">
+                    <Label className="mb-2 block">Documentos Iniciais (Opcional)</Label>
                     <FieldSet>
-                        <FieldLegend>Documentos do Paciente</FieldLegend>
-
-                        <Empty className="border border-dashed py-6">
+                        <Empty className="border border-dashed py-6 mt-3">
                             <EmptyHeader>
                                 <EmptyMedia variant="icon">
-                                    <CloudDownload className="h-8 w-8" />
+                                    <CloudUpload className="h-8 w-8" />
                                 </EmptyMedia>
                                 <EmptyTitle className="text-base">Sem Documentos</EmptyTitle>
-                                <EmptyDescription className="text-sm">
-                                    Faça o upload dos documentos do paciente
-                                </EmptyDescription>
+                                <EmptyDescription className="text-sm">Faça o upload dos documentos do paciente</EmptyDescription>
                             </EmptyHeader>
                             <EmptyContent>
-                                <Button variant="outline" size="sm" type="button">
-                                    Upload de Documentos
-                                </Button>
+                                <Button variant="outline" size="sm" type="button">Upload de Documentos</Button>
                             </EmptyContent>
                         </Empty>
                     </FieldSet>
+                </div>
 
-                    <FieldSeparator />
+                <div className="flex justify-end pt-2">
+                    <Button type="submit" disabled={isPending} className="w-full sm:w-auto min-w-[150px]">
+                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isPending ? "Salvando..." : "Salvar Alterações"}
+                    </Button>
+                </div>
 
-                    <Field orientation="horizontal">
-                        <Button className="w-full" type="submit" disabled={isPending}>
-                            {isPending ? "Salvando..." : "Salvar Alterações"}
-                        </Button>
-                    </Field>
-
-                </FieldGroup>
             </form>
         </DialogContent>
     )

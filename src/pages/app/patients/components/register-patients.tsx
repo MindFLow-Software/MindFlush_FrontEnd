@@ -1,37 +1,41 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { ChevronDownIcon, CloudUpload } from "lucide-react"
+import {
+    CalendarIcon,
+    Loader2,
+    Upload,
+    Eye,
+    EyeOff,
+    Mars,
+    Venus,
+    Users,
+    Camera,
+    CloudUpload
+} from "lucide-react"
 import { toast } from "sonner"
-import { AxiosError } from "axios" // Importar o tipo AxiosError para tipagem
-// ⚠️ Importar cn se estiver usando
-// import { cn } from "@/lib/utils" 
+import { AxiosError } from "axios"
 
 import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-
-import {
-    Field,
-    FieldGroup,
-    FieldSet,
-    FieldLabel,
-    FieldLegend,
-    FieldSeparator,
-} from "@/components/ui/field"
-
-import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyMedia, EmptyContent } from "@/components/ui/empty"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 import { formatCPF } from "@/utils/formatCPF"
 import { formatPhone } from "@/utils/formatPhone"
-
 import { registerPatients, type RegisterPatientsBody } from "@/api/create-patients"
+import { FieldSet } from "@/components/ui/field"
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+
+// Utilitário simples para classes condicionais
+const cn = (...classes: (string | boolean | undefined)[]) => classes.filter(Boolean).join(' ');
 
 interface FormErrors {
     firstName?: boolean
@@ -43,74 +47,56 @@ interface FormErrors {
     phoneNumber?: boolean
 }
 
-const cn = (...classes: (string | boolean | undefined)[]) => classes.filter(Boolean).join(' ');
-
-
 export function RegisterPatients() {
     const queryClient = useQueryClient()
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
+    // Estados do Formulário
     const [date, setDate] = useState<Date | undefined>()
     const [cpf, setCpf] = useState("")
     const [phone, setPhone] = useState("")
     const [gender, setGender] = useState("FEMININE")
-    // REMOVIDO: const [role, setRole] = useState("PATIENT")
-    const [isActive, setIsActive] = useState(true)
+    const [isActive] = useState(true)
 
+    // Estados de UI
+    const [showPassword, setShowPassword] = useState(false)
+    const [previewImage, setPreviewImage] = useState<string | null>(null)
     const [errors, setErrors] = useState<FormErrors>({})
 
+    // Mutação (API)
     const { mutateAsync: registerPatientFn, isPending } = useMutation({
         mutationFn: registerPatients,
-        onMutate: async (variables) => {
-            await queryClient.cancelQueries({ queryKey: ["patients"] })
-            const previous = queryClient.getQueryData(["patients"])
-
-            queryClient.setQueryData(["patients"], (old: any) => {
-                if (Array.isArray(old)) return [...old, variables]
-                if (old?.data && Array.isArray(old.data))
-                    return { ...old, data: [...old.data, variables] }
-                return old
-            })
-
-            return { previous }
+        onSuccess: () => {
+            toast.success("Paciente cadastrado com sucesso!")
+            queryClient.invalidateQueries({ queryKey: ["patients"] })
         },
-        onError: (err, _vars, ctx) => { // O tipo 'err' é inferido ou pode ser tipado como 'AxiosError'
-            if (ctx?.previous) queryClient.setQueryData(["patients"], ctx.previous)
-
-            // --- INÍCIO DA LÓGICA DE TRATAMENTO DE ERROS COM DETALHES DA API ---
+        onError: (err) => {
             let errorMessage = "Erro ao cadastrar paciente."
-
-            // Verifica se é um erro do Axios e se há uma resposta com dados
             if (err instanceof AxiosError && err.response) {
-                // Tenta extrair a mensagem do corpo da resposta (padrão de muitas APIs)
-                const apiMessage = err.response.data?.message || err.response.data?.error
-
-                if (err.response.status === 409) {
-                    errorMessage = apiMessage || "Conflito: CPF ou Email já cadastrado no sistema."
-                } else if (apiMessage) {
-                    errorMessage = apiMessage
-                } else {
-                    errorMessage = `Erro (${err.response.status}): Falha na comunicação com o servidor.`
-                }
-            } else {
-                errorMessage = "Erro desconhecido. Tente novamente."
+                errorMessage = err.response.data?.message || "Erro na comunicação com o servidor."
             }
-
             toast.error(errorMessage)
-        },
-        onSuccess: () => toast.success("Paciente cadastrado com sucesso!"),
-        onSettled: () => queryClient.invalidateQueries({ queryKey: ["patients"] })
+        }
     })
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (file) {
+            const reader = new FileReader()
+            reader.onloadend = () => setPreviewImage(reader.result as string)
+            reader.readAsDataURL(file)
+        }
+    }
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
-        setErrors({}) // Limpa erros anteriores no início
+        setErrors({})
 
         const form = e.currentTarget
         const fd = new FormData(form)
 
         const rawCpf = cpf.replace(/\D/g, "")
         const rawPhone = phone.replace(/\D/g, "")
-
         const firstName = fd.get("firstName") as string
         const lastName = fd.get("lastName") as string
         const email = fd.get("email") as string
@@ -118,16 +104,15 @@ export function RegisterPatients() {
 
         const newErrors: FormErrors = {}
 
-        // --- Lógica de Validação ---
+        // Validação Manual
         if (!firstName) newErrors.firstName = true
         if (!lastName) newErrors.lastName = true
         if (!email) newErrors.email = true
-        if (password.length < 6) newErrors.password = true
+        if (!password || password.length < 6) newErrors.password = true
         if (!date) newErrors.dateOfBirth = true
         if (rawCpf.length < 11) newErrors.cpf = true
         if (rawPhone.length < 10) newErrors.phoneNumber = true
 
-        // Se houver erros, atualiza o estado e para
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors)
             toast.error("Preencha corretamente os campos destacados.")
@@ -140,182 +125,217 @@ export function RegisterPatients() {
             email: email || undefined,
             password,
             phoneNumber: rawPhone,
-            profileImageUrl: (fd.get("profileImageUrl") as string) || undefined,
             dateOfBirth: date!,
             cpf: rawCpf,
             role: "PATIENT" as any,
             gender: gender as any,
             isActive,
             expertise: "NONE" as any,
+            // Passando a string base64 se houver, ou undefined
+            profileImageUrl: previewImage || undefined
         }
 
         try {
             await registerPatientFn(data)
-
-            // Resetar o formulário apenas em caso de sucesso
+            // Reset do form
             form.reset()
             setCpf("")
             setPhone("")
             setDate(undefined)
             setGender("FEMININE")
-            setIsActive(true)
-
+            setPreviewImage(null)
         } catch (error) {
-            // O erro já é tratado no bloco onError do useMutation
-            // Não é necessário fazer mais nada aqui, apenas evitar o reset
-            console.error("Erro no cadastro:", error);
+            console.error(error)
         }
-
     }
 
     return (
-        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto sm:rounded-xl">
             <DialogHeader>
-                <DialogTitle>Novo Paciente</DialogTitle>
+                <DialogTitle>Novo Prontuário</DialogTitle>
                 <DialogDescription>
-                    Preencha os dados para cadastrar um novo paciente
+                    Cadastre as informações básicas do paciente para iniciar o acompanhamento.
                 </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit}>
-                <FieldGroup className="mt-3">
+            <form onSubmit={handleSubmit} className="grid gap-6 py-4">
 
-                    <FieldSet>
-                        <FieldGroup>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* 1. SEÇÃO DE AVATAR (NOVIDADE UI) */}
+                <div className="flex flex-col items-center justify-center gap-2">
+                    <div
+                        className="relative group cursor-pointer"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        <Avatar className="h-24 w-24 border-2 border-dashed border-muted-foreground/30 group-hover:border-primary transition-colors">
+                            <AvatarImage src={previewImage || ""} className="object-cover" />
+                            <AvatarFallback className="bg-muted">
+                                <Camera className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
+                            </AvatarFallback>
+                        </Avatar>
 
-                                <Field>
-                                    <FieldLabel htmlFor="firstName">Primeiro Nome*</FieldLabel>
-                                    <Input
-                                        id="firstName"
-                                        name="firstName"
-                                        maxLength={30}
-                                        placeholder="Ex: Mariana"
-                                        className={cn(errors.firstName && "border-red-500 ring-red-500")}
+                        {/* Botãozinho flutuante de editar */}
+                        <div className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-1.5 shadow-md group-hover:scale-110 transition-transform">
+                            <Upload className="h-3 w-3" />
+                        </div>
+                    </div>
+                    <span className="text-xs text-muted-foreground">Clique para adicionar foto</span>
+
+                    {/* Input invisível */}
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                    />
+                </div>
+
+                <div className="border-t my-2" />
+
+                {/* 2. DADOS PESSOAIS */}
+                <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        Dados Pessoais
+                    </h3>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="firstName" className={cn(errors.firstName && "text-red-500")}>Nome *</Label>
+                            <Input
+                                id="firstName" name="firstName" placeholder="Ex: Ana"
+                                className={cn(errors.firstName && "border-red-500 focus-visible:ring-red-500")}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="lastName" className={cn(errors.lastName && "text-red-500")}>Sobrenome *</Label>
+                            <Input
+                                id="lastName" name="lastName" placeholder="Ex: Silva"
+                                className={cn(errors.lastName && "border-red-500 focus-visible:ring-red-500")}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="cpf" className={cn(errors.cpf && "text-red-500")}>CPF *</Label>
+                            <Input
+                                id="cpf" name="cpf" placeholder="000.000.000-00" maxLength={14}
+                                value={cpf} onChange={(e) => setCpf(formatCPF(e.target.value))}
+                                className={cn(errors.cpf && "border-red-500 focus-visible:ring-red-500")}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className={cn(errors.dateOfBirth && "text-red-500")}>Data de Nascimento *</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant={"outline"}
+                                        className={cn(
+                                            "w-full justify-start text-left font-normal",
+                                            !date && "text-muted-foreground",
+                                            errors.dateOfBirth && "border-red-500 text-red-500"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {date ? format(date, "dd 'de' MMMM, yyyy", { locale: ptBR }) : <span>Selecione</span>}
+                                    </Button>
+                                </PopoverTrigger>
+
+                                {/* AQUI ESTÁ A MUDANÇA */}
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        captionLayout="dropdown"
+                                        selected={date}
+                                        onSelect={setDate}
+                                        fromYear={1900}
+                                        toYear={new Date().getFullYear()}
+                                        locale={ptBR}
                                     />
-                                </Field>
+                                </PopoverContent>
 
-                                <Field>
-                                    <FieldLabel htmlFor="lastName">Último Nome*</FieldLabel>
-                                    <Input
-                                        id="lastName"
-                                        name="lastName"
-                                        maxLength={50}
-                                        placeholder="Ex: Silva"
-                                        className={cn(errors.lastName && "border-red-500 ring-red-500")}
-                                    />
-                                </Field>
+                            </Popover>
+                        </div>
+                    </div>
+                </div>
 
-                                <Field>
-                                    <FieldLabel htmlFor="cpf">CPF*</FieldLabel>
-                                    <Input
-                                        id="cpf"
-                                        name="cpf"
-                                        placeholder="000.000.000-00"
-                                        maxLength={14}
-                                        value={cpf}
-                                        onChange={(e) => setCpf(formatCPF(e.target.value))}
-                                        className={cn(errors.cpf && "border-red-500 ring-red-500")}
-                                    />
-                                </Field>
+                {/* 3. CONTATO E ACESSO */}
+                <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 pt-2 border-t">
+                        Contato e Acesso
+                    </h3>
 
-                                <Field>
-                                    <FieldLabel>Data de Nascimento*</FieldLabel>
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button
-                                                variant="outline"
-                                                className={cn(
-                                                    "w-full justify-between bg-transparent font-normal",
-                                                    errors.dateOfBirth && "border-red-500 text-red-500 hover:text-red-500 hover:border-red-500" // 🔴 Borda vermelha para o botão Popover
-                                                )}
-                                            >
-                                                {date ? format(date, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
-                                                <ChevronDownIcon className="ml-2 h-4 w-4 opacity-50" />
-                                            </Button>
-                                        </PopoverTrigger>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="phoneNumber" className={cn(errors.phoneNumber && "text-red-500")}>Celular / WhatsApp *</Label>
+                            <Input
+                                id="phoneNumber" name="phoneNumber" placeholder="(00) 00000-0000" maxLength={15}
+                                value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))}
+                                className={cn(errors.phoneNumber && "border-red-500 focus-visible:ring-red-500")}
+                            />
+                        </div>
 
-                                        <PopoverContent className="p-0 w-auto overflow-hidden" align="start">
-                                            <Calendar
-                                                mode="single"
-                                                captionLayout="dropdown"
-                                                selected={date}
-                                                onSelect={setDate}
-                                                fromYear={1900}
-                                                toYear={new Date().getFullYear()}
-                                                locale={ptBR}
-                                            />
-                                        </PopoverContent>
-                                    </Popover>
-                                </Field>
+                        <div className="space-y-2">
+                            <Label>Gênero</Label>
+                            <Select value={gender} onValueChange={setGender}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="FEMININE">
+                                        <div className="flex items-center gap-2"><Venus className="h-4 w-4 text-rose-500" /> Feminino</div>
+                                    </SelectItem>
+                                    <SelectItem value="MASCULINE">
+                                        <div className="flex items-center gap-2"><Mars className="h-4 w-4 text-blue-500" /> Masculino</div>
+                                    </SelectItem>
+                                    <SelectItem value="OTHER">
+                                        <div className="flex items-center gap-2"><Users className="h-4 w-4 text-violet-500" /> Outro</div>
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
 
-                                <Field>
-                                    <FieldLabel htmlFor="phoneNumber">Telefone*</FieldLabel>
-                                    <Input
-                                        id="phoneNumber"
-                                        name="phoneNumber"
-                                        placeholder="(11) 99999-9999"
-                                        maxLength={15}
-                                        value={phone}
-                                        onChange={(e) => setPhone(formatPhone(e.target.value))}
-                                        className={cn(errors.phoneNumber && "border-red-500 ring-red-500")}
-                                    />
-                                </Field>
+                        <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="email" className={cn(errors.email && "text-red-500")}>Email *</Label>
+                            <Input
+                                id="email" name="email" type="email" placeholder="email@exemplo.com"
+                                className={cn(errors.email && "border-red-500 focus-visible:ring-red-500")}
+                            />
+                        </div>
 
-                                <Field>
-                                    <FieldLabel htmlFor="email">Email*</FieldLabel>
-                                    <Input
-                                        id="email"
-                                        name="email"
-                                        type="email"
-                                        placeholder="exemplo@email.com"
-                                        className={cn(errors.email && "border-red-500 ring-red-500")}
-                                    />
-                                </Field>
-
-                            </div>
-
-                            <Field>
-                                <FieldLabel htmlFor="password">Senha*</FieldLabel>
+                        <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="password" className={cn(errors.password && "text-red-500")}>Senha de Acesso *</Label>
+                            <div className="relative">
                                 <Input
                                     id="password"
                                     name="password"
-                                    type="password"
+                                    type={showPassword ? "text" : "password"}
                                     placeholder="Mínimo 6 caracteres"
-                                    minLength={6}
-                                    maxLength={30}
-                                    className={cn(errors.password && "border-red-500 ring-red-500")}
+                                    className={cn("pr-10", errors.password && "border-red-500 focus-visible:ring-red-500")}
                                 />
-                            </Field>
-
-                        </FieldGroup>
-                    </FieldSet>
-
-                    <FieldSeparator />
-
-                    <FieldSet>
-                        <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
-
-                            <Field>
-                                <FieldLabel>Gênero do Paciente</FieldLabel>
-                                <Select value={gender} onValueChange={setGender}>
-                                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="FEMININE">Feminino</SelectItem>
-                                        <SelectItem value="MASCULINE">Masculino</SelectItem>
-                                        <SelectItem value="OTHER">Outro</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                    ) : (
+                                        <Eye className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                </Button>
+                            </div>
                         </div>
-                    </FieldSet>
+                    </div>
+                </div>
 
-
+                {/* 4. DOCUMENTOS (Placeholder visual melhorado) */}
+                <div className="pt-2 border-t">
+                    <Label className="mb-2 block">Documentos Iniciais (Opcional)</Label>
                     <FieldSet>
-                        <FieldLegend>Documentos do Paciente</FieldLegend>
-
-                        <Empty className="border border-dashed py-6">
+                        <Empty className="border border-dashed py-6 mt-3">
                             <EmptyHeader>
                                 <EmptyMedia variant="icon">
                                     <CloudUpload className="h-8 w-8" />
@@ -328,16 +348,15 @@ export function RegisterPatients() {
                             </EmptyContent>
                         </Empty>
                     </FieldSet>
+                </div>
 
-                    <FieldSeparator />
+                <div className="flex justify-end pt-2">
+                    <Button type="submit" disabled={isPending} className="w-full sm:w-auto min-w-[150px]">
+                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isPending ? "Salvando..." : "Cadastrar Paciente"}
+                    </Button>
+                </div>
 
-                    <Field orientation="horizontal">
-                        <Button className="w-full" type="submit" disabled={isPending}>
-                            {isPending ? "Cadastrando..." : "Cadastrar paciente"}
-                        </Button>
-                    </Field>
-
-                </FieldGroup>
             </form>
         </DialogContent>
     )
