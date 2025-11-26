@@ -29,7 +29,7 @@ export function DashboardFinance() {
         setTitle('Pagamentos')
     }, [setTitle])
 
-    // Corrigido: desestruturação do state para permitir atualização
+    // State declaration is correct
     const [dateRange, setDateRange] = useState<DateRange>(getInitialRange)
 
     const handleRangeChange = (range: DateRange) => {
@@ -43,14 +43,18 @@ export function DashboardFinance() {
             <Helmet title="Pagamentos" />
             <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 sm:py-6">
 
+                {/* 1. PASS THE CURRENT DATE RANGE TO THE PICKER */}
                 <DateRangePicker
                     onChange={handleRangeChange}
+                    // Added props to pass the current range state
+                    initialRange={dateRange} 
                 />
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    <TotalBalanceCard />
-                    <CompletedTransactionsCard />
-                    <DiscountValueCard />
+                    {/* 2. PASS THE DATE RANGE TO THE CARD COMPONENTS */}
+                    <TotalBalanceCard dateRange={dateRange} />
+                    <CompletedTransactionsCard dateRange={dateRange} />
+                    <DiscountValueCard dateRange={dateRange} />
                 </div>
             </div>
         </>
