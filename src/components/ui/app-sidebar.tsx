@@ -6,7 +6,6 @@ import {
     Clock,
     GalleryVerticalEnd,
     Home,
-    Map,
     Users2,
     Wallet,
     CalendarCheck,
@@ -74,7 +73,6 @@ const projects = [
         url: "https://cdn.botpress.cloud/webchat/v3.3/shareable.html?configUrl=https://files.bpcontent.cloud/2025/11/24/22/20251124224302-TGJFOW69.json",
         icon: BrainCircuit,
     },
-    { name: "Travel", url: "#", icon: Map },
 ]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
