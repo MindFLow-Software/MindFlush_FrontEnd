@@ -1,6 +1,7 @@
 "use client"
 
 import { TwitterLogo } from "@phosphor-icons/react";
+import { motion } from "framer-motion";
 
 // --- Dados dos Depoimentos (Fictícios para Psicólogos) ---
 const testimonials = [
@@ -94,9 +95,18 @@ export function TestimonialsSection() {
             <div className="container mx-auto mb-16 px-6 text-center md:px-8 lg:px-12">
                 {/* Badge */}
                 <div className="mb-6 flex justify-center">
-                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 shadow-sm">
-                        Depoimentos
-                    </span>
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200 shadow-sm mb-6"
+                    >
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                        </span>
+                        <span className="text-xs font-semibold text-slate-600 tracking-wide uppercase">Depoimentos</span>
+                    </motion.div>
                 </div>
 
                 {/* Título */}

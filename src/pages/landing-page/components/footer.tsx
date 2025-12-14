@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import {
     Brain,
-    DiscordLogo,
     InstagramLogo,
+    LinkedinLogoIcon,
     TwitterLogo,
     YoutubeLogo
 } from "@phosphor-icons/react";
@@ -109,7 +109,7 @@ export function Footer() {
 
                     <div className="mt-4 flex gap-6 md:mt-0">
                         <a href="#" className="text-slate-400 transition-colors hover:text-blue-600">
-                            <DiscordLogo size={24} />
+                            <LinkedinLogoIcon size={24} />
                         </a>
                         <a href="#" className="text-slate-400 transition-colors hover:text-pink-600">
                             <InstagramLogo size={24} />
