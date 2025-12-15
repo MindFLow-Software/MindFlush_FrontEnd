@@ -12,3 +12,26 @@ if (import.meta.env.VITE_ENABLE_API_DELAY === 'true') {
     return config
   })
 }
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config
+
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry
+    ) {
+      originalRequest._retry = true
+
+      try {
+        await api.post('/sessions/refresh')
+        return api(originalRequest)
+      } catch {
+        window.location.href = '/login'
+      }
+    }
+
+    return Promise.reject(error)
+  }
+)
