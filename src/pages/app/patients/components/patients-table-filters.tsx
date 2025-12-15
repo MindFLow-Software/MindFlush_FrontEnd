@@ -20,12 +20,10 @@ const patientsFilterSchema = z.object({
 
 type PatientsFilterSchema = z.infer<typeof patientsFilterSchema>
 
-// 1. Definição da interface para aceitar a prop do pai
 interface PatientsTableFiltersProps {
   onPatientRegistered?: () => void
 }
 
-// 2. Recebe a prop no componente
 export function PatientsTableFilters({ onPatientRegistered }: PatientsTableFiltersProps) {
   const [searchParams, setSearchParams] = useSearchParams()
   const [isRegisterOpen, setIsRegisterOpen] = useState(false)
@@ -57,7 +55,14 @@ export function PatientsTableFilters({ onPatientRegistered }: PatientsTableFilte
       if (status && status !== "all") state.set("status", status)
       else state.delete("status")
 
-      state.set("pageIndex", "0")
+      // 🔴 ANTES (ERRADO):
+      // state.set("pageIndex", "0")
+
+      // 🟢 DEPOIS (CORRETO):
+      // Removemos o parâmetro técnico e setamos a página humana para 1
+      state.delete("pageIndex")
+      state.set("page", "1")
+
       return state
     })
   }
@@ -91,7 +96,6 @@ export function PatientsTableFilters({ onPatientRegistered }: PatientsTableFilte
         />
       </div>
 
-      {/* Botão de cadastro */}
       <div className="flex items-center">
         <Button
           size="sm"

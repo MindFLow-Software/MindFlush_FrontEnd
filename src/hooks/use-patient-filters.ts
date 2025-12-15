@@ -1,41 +1,61 @@
 import { useSearchParams } from "react-router-dom"
 import { z } from "zod"
-import { useCallback, useMemo } from "react"
 
 export function usePatientFilters() {
   const [searchParams, setSearchParams] = useSearchParams()
 
+  const page = searchParams.get("page") ?? "1"
+
   const pageIndex = z.coerce
     .number()
-    .int()
-    .min(1)
-    .catch(1)
-    .transform((page) => page - 1)
-    .parse(searchParams.get("pageIndex") ?? "1")
+    .transform((val) => val - 1)
+    .parse(page)
 
-  const perPage = 12
+  const filters = {
+    pageIndex: Math.max(0, pageIndex),
+    perPage: Number(searchParams.get("perPage") ?? "10"),
+    name: searchParams.get("name"),
+    cpf: searchParams.get("cpf"),
+    status: searchParams.get("status"),
+  }
 
-  const name = searchParams.get("name") || undefined
-  const cpf = searchParams.get("cpf") || undefined
-  const status = searchParams.get("status") || undefined
-
-  // Memoiza os filtros para evitar loops de re-render no React Query
-  const filters = useMemo(() => ({
-    pageIndex,
-    perPage,
-    name,
-    cpf,
-    status
-  }), [pageIndex, perPage, name, cpf, status])
-
-  // Função helper para mudar de página
-  const setPage = useCallback((newPageIndex: number) => {
+  function setPage(pageIndex: number) {
     setSearchParams((state) => {
-      // Converte índice 0 (API) para página 1 (URL)
-      state.set("pageIndex", String(newPageIndex + 1))
+      state.delete("pageIndex")
+      state.set("page", (pageIndex + 1).toString())
       return state
     })
-  }, [setSearchParams])
+  }
 
-  return { filters, setPage }
+  function setFilters(newFilters: Partial<typeof filters>) {
+    setSearchParams((state) => {
+      state.delete("pageIndex")
+
+      if (newFilters.name) state.set("name", newFilters.name)
+      else state.delete("name")
+
+      if (newFilters.cpf) state.set("cpf", newFilters.cpf)
+      else state.delete("cpf")
+
+      if (newFilters.status) state.set("status", newFilters.status)
+      else state.delete("status")
+
+      state.set("page", "1")
+
+      return state
+    })
+  }
+
+  function clearFilters() {
+    setSearchParams((state) => {
+      state.delete("name")
+      state.delete("cpf")
+      state.delete("status")
+      state.delete("pageIndex")
+      state.set("page", "1")
+      return state
+    })
+  }
+
+  return { filters, setPage, setFilters, clearFilters }
 }
