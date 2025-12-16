@@ -18,8 +18,6 @@ import { usePatientFilters } from "@/hooks/use-patient-filters"
 export function PatientsList() {
     const { setTitle } = useHeaderStore()
 
-    // 🔹 FIX: CASTING - Aplicamos casting para garantir que o TypeScript reconheça a estrutura de filtros com 'filter',
-    // resolvendo o erro de tipagem que o compilador está reportando.
     const { filters, setPage } = usePatientFilters() as unknown as { filters: GetPatientsFilters, setPage: (pageIndex: number) => void };
 
     const { achievement, checkAchievement, clearAchievement } = usePatientAchievements()
@@ -33,8 +31,6 @@ export function PatientsList() {
 
     // 3. Busca de Dados
     const { data: result, isLoading, isError } = useQuery<GetPatientsResponse>({
-        // 🔹 CORREÇÃO: Usamos filters.filter em vez de filters.name e filters.cpf
-        // Isso garante que a consulta seja refeita quando o campo de busca único mudar.
         queryKey: ["patients", filters.pageIndex, filters.perPage, filters.filter, filters.status],
         queryFn: () => getPatients(filters),
         staleTime: 1000 * 60 * 5,
@@ -61,7 +57,6 @@ export function PatientsList() {
                     {/* Filtros */}
                     <PatientsTableFilters onPatientRegistered={checkAchievement} />
 
-                    {/* Tabela (Layout original restaurado) */}
                     <PatientsTable
                         patients={patients}
                         isLoading={isLoading}
