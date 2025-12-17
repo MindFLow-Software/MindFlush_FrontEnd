@@ -1,6 +1,6 @@
 "use client"
 
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   BadgeCheck,
   Bell,
@@ -46,6 +46,7 @@ export function NavUser() {
   const { isMobile } = useSidebar()
   const navigate = useNavigate()
   const { setTheme } = useTheme()
+  const queryClient = useQueryClient()
 
   const {
     data: profile,
@@ -55,15 +56,22 @@ export function NavUser() {
     queryKey: ["psychologist-profile"],
     queryFn: getProfile,
     retry: false,
-    staleTime: Infinity, // 🔑 Define que os dados nunca ficam obsoletos, evitando recarregamento
+    staleTime: Infinity,
   })
 
   const { mutateAsync: signOutFn, isPending: isSigningOut } = useMutation({
     mutationFn: signOut,
     onSuccess: () => {
+      queryClient.clear()
+
       toast.success('Logout realizado com sucesso!', { duration: 4000 })
       navigate("/sign-in", { replace: true })
     },
+    onError: (error) => {
+      console.error("Erro ao fazer logout:", error)
+      localStorage.removeItem('isAuthenticated')
+      navigate("/sign-in", { replace: true })
+    }
   })
 
   const name = profile

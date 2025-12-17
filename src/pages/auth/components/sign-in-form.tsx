@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { signIn } from "@/api/sign-in"
-import { api } from "@/lib/axios" // 🔹 Importamos a instância do api para configurar o header manualmente
 
 const signInSchema = z.object({
   email: z.string().email({ message: "E-mail inválido" }),
@@ -46,41 +45,21 @@ export function SignInForm({ className, ...props }: React.ComponentProps<"form">
   const handleSignIn = useCallback(
     async (data: SignInSchema) => {
       try {
-        const result = await authenticate(data)
+        await authenticate(data)
 
-        // 🔍 DEBUG: Verifique no console do navegador o que está chegando
-        console.log("Resposta do Login:", result)
+        localStorage.setItem("isAuthenticated", "true")
 
-        // Tenta encontrar o token em propriedades comuns (access_token, token, jwt)
-        // O uso de 'as any' permite verificar propriedades que não estão na tipagem estrita
-        const token =
-          result?.access_token ||
-          (result as any)?.token ||
-          (result as any)?.jwt
+        toast.success("Login realizado com sucesso!", { duration: 4000 })
 
-        if (token) {
-          // 1. Salva no Storage para persistência (reloads futuros)
-          localStorage.setItem("accessToken", token)
-
-          // 2. ⚠️ FIX CRÍTICO: Injeta o token diretamente nos headers da instância atual do Axios.
-          // Isso garante que as requisições do Dashboard (feitas logo após o navigate) já tenham o token,
-          // sem depender apenas da leitura do localStorage pelo interceptor.
-          api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-
-          toast.success("Login realizado com sucesso!", { duration: 4000 })
-          // 'replace: true' impede voltar ao login pelo botão "Voltar" do navegador
-          navigate("/dashboard", { replace: true })
-        } else {
-          console.error("Token não encontrado na resposta:", result)
-          toast.error("Erro: Token de acesso não recebido do servidor.")
-        }
+        navigate("/dashboard", { replace: true })
 
       } catch (error: any) {
         console.error("❌ Erro na requisição de login:", error)
         if (error?.response?.status === 401) {
           toast.error("Credenciais inválidas. Verifique seu e-mail e senha.")
         } else {
-          toast.error("Ocorreu um erro inesperado. Tente novamente mais tarde.")
+          const errorMessage = error?.response?.data?.message || "Ocorreu um erro inesperado."
+          toast.error(errorMessage)
         }
       }
     },
@@ -126,7 +105,6 @@ export function SignInForm({ className, ...props }: React.ComponentProps<"form">
           )}
         </div>
 
-        {/* Password Field */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password" className="text-sm font-medium">
@@ -174,7 +152,6 @@ export function SignInForm({ className, ...props }: React.ComponentProps<"form">
           )}
         </div>
 
-        {/* Submit Button */}
         <div className="pt-2">
           <Button
             disabled={isSubmitting}
@@ -192,7 +169,6 @@ export function SignInForm({ className, ...props }: React.ComponentProps<"form">
           </Button>
         </div>
 
-        {/* Separator */}
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t" />
@@ -204,7 +180,6 @@ export function SignInForm({ className, ...props }: React.ComponentProps<"form">
           </div>
         </div>
 
-        {/* Sign Up Link */}
         <div>
           <p className="text-center text-sm text-muted-foreground">
             Não tem uma conta?{" "}

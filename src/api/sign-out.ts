@@ -1,5 +1,5 @@
 import { api } from '@/lib/axios'
 
 export async function signOut() {
-  await api.post('/sign-out')
+  await api.post('/session/logout')
 }
