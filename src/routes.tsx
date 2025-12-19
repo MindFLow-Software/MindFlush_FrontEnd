@@ -90,10 +90,10 @@ export const router = createBrowserRouter([
         path: '/dashboard',
         element: <Dashboard />,
       },
-      {
-        path: '/dashboard-finance',
-        element: <DashboardFinance />,
-      },
+      // {
+      //   path: '/dashboard-finance',
+      //   element: <DashboardFinance />,
+      // },
       {
         path: '/patients-list',
         element: <PatientsList />,
