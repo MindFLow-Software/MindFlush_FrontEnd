@@ -1,13 +1,38 @@
+import { useEffect, useState } from "react" // Adicionado
+import { useNavigate } from "react-router-dom" // Adicionado
 import { Helmet } from "react-helmet-async"
 import { Link } from "react-router-dom"
 import { SignInForm } from "./components/sign-in-form"
 import { Button } from "@/components/ui/button"
+import { api } from "@/lib/axios"
 
 export function SignIn() {
+  const navigate = useNavigate()
+  const [isChecking, setIsChecking] = useState(true)
+
+  useEffect(() => {
+    async function checkAuthentication() {
+      try {
+        await api.get('/psychologist/me')
+
+        navigate('/dashboard', { replace: true })
+      } catch (error) {
+
+        setIsChecking(false)
+      }
+    }
+
+    checkAuthentication()
+  }, [navigate])
+
+  if (isChecking) {
+    return null
+  }
+
   return (
     <>
       <Helmet title="Entrar no MindFlush" />
-      <div className="flex min-h-svh justify-center p-4 sm:p-8"> 
+      <div className="flex min-h-svh justify-center p-4 sm:p-8">
         <Button
           variant={"link"}
           asChild
@@ -16,7 +41,6 @@ export function SignIn() {
           <Link to="/sign-up">Criar Conta</Link>
         </Button>
 
-        {/* Mantido o max-w-[450px] e o pt-16 para padronização */}
         <div className="flex w-full max-w-[450px] flex-col justify-center gap-6 pt-16">
           <div className="flex flex-col gap-2 text-center">
             <h1 className="text-2xl font-semibold tracking-tight">
