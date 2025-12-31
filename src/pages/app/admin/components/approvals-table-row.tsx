@@ -10,8 +10,6 @@ import { TableCell, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog } from "@/components/ui/dialog"
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
-import { Badge } from "@/components/ui/badge"
-
 import { approvePsychologist } from "@/api/approvals"
 import { formatAGE } from "@/utils/formatAGE"
 import { ApprovalsDetailsDialog } from "./approvals-details-dialog"
@@ -31,7 +29,7 @@ export function ApprovalsTableRow({ psychologist }: { psychologist: any }) {
     const getSLAProps = () => {
         if (diffInHours < 24) {
             return {
-                label: diffInHours < 1 ? "Agora" : `${diffInHours}h`,
+                label: diffInHours < 1 ? "Agora" : `${diffInHours} Horas`,
                 classes:
                     "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-400",
                 dot: "bg-emerald-500",
@@ -130,15 +128,15 @@ export function ApprovalsTableRow({ psychologist }: { psychologist: any }) {
 
             <TableCell>
                 <div className="flex items-center gap-2">
+                    <span className={`h-1.5 w-1.5 rounded-full ${sla.dot}`} />
+                    {sla.label}
+                </div>
+            </TableCell>
+
+            <TableCell>
+                <div className="flex items-center gap-2">
                     <div className="flex flex-col items-start">
                         <span className="text-xs text-muted-foreground tabular-nums">{createdAt.toLocaleDateString("pt-BR")}</span>
-                        <Badge
-                            variant="outline"
-                            className={`mt-1 text-[10px] px-1.5 py-0 h-[18px] font-semibold tracking-tight gap-1 ${sla.classes}`}
-                        >
-                            <span className={`h-1.5 w-1.5 rounded-full ${sla.dot}`} />
-                            {sla.label}
-                        </Badge>
                     </div>
                 </div>
             </TableCell>

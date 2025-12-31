@@ -20,6 +20,7 @@ export function ApprovalsTable({ psychologists, isLoading }: ApprovalsTableProps
                         <TableHead>CRP</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Idade / Nasc.</TableHead>
+                        <TableHead>Tempo de Espera</TableHead>
                         <TableHead>Data de Cadastro</TableHead>
                         <TableHead className="text-center w-[220px]">Ações</TableHead>
                     </TableRow>
