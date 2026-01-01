@@ -30,7 +30,7 @@ export function AppointmentsList() {
     const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
 
     useEffect(() => {
-        setTitle('Calendário de Agendamentos')
+        setTitle('Meus Agendamentos')
     }, [setTitle])
 
     const [searchParams] = useSearchParams()

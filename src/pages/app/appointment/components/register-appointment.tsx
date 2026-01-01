@@ -204,7 +204,7 @@ export function RegisterAppointment({ initialDate, onSuccess }: RegisterAppointm
                 <div className="space-y-2">
                     <Label htmlFor="diagnosis" className="text-sm font-medium flex items-center gap-2">
                         <Stethoscope className="h-4 w-4 text-muted-foreground" />
-                        Diagnóstico
+                        Tema da Sessão
                     </Label>
                     <Input
                         id="diagnosis"
