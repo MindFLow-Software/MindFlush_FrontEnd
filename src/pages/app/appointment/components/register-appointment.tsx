@@ -7,6 +7,7 @@ import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { toast } from "sonner"
 import { CalendarIcon, Clock, FileText, Loader2, Stethoscope, User } from "lucide-react"
+import { AxiosError } from "axios"
 
 import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -22,13 +23,11 @@ import { getPatients } from "@/api/get-patients"
 
 const MAX_NOTE_LENGTH = 200
 
-// 1. Definição da Interface das Props (Type Safety)
 interface RegisterAppointmentProps {
     initialDate?: Date
     onSuccess?: () => void
 }
 
-// 2. Recebendo as props no componente
 export function RegisterAppointment({ initialDate, onSuccess }: RegisterAppointmentProps) {
     const queryClient = useQueryClient()
 
@@ -41,19 +40,15 @@ export function RegisterAppointment({ initialDate, onSuccess }: RegisterAppointm
     const [diagnosis, setDiagnosis] = useState("")
     const [isLoadingPatients, setIsLoadingPatients] = useState(true)
 
-    // 3. Effect: Preenche data e hora automaticamente ao abrir via calendário
     useEffect(() => {
         if (initialDate) {
             setDate(initialDate)
-
-            // Formata a hora do objeto Date para string "HH:mm" (necessário para o input type="time")
             const hours = String(initialDate.getHours()).padStart(2, '0')
             const minutes = String(initialDate.getMinutes()).padStart(2, '0')
             setTime(`${hours}:${minutes}`)
         }
     }, [initialDate])
 
-    // Busca de pacientes
     useEffect(() => {
         const fetchPatients = async () => {
             setIsLoadingPatients(true)
@@ -86,21 +81,37 @@ export function RegisterAppointment({ initialDate, onSuccess }: RegisterAppointm
         onSuccess: () => {
             toast.success("Agendamento criado com sucesso!")
             queryClient.invalidateQueries({ queryKey: ["appointments"] })
-
-            // 4. Fecha o modal chamando a prop do pai
             if (onSuccess) {
                 onSuccess()
             }
         },
-        onError: () => toast.error("Erro ao criar agendamento."),
+        onError: (error) => {
+            // 🔹 Tratamento de erros específico
+            if (error instanceof AxiosError) {
+                const status = error.response?.status
+                const message = error.response?.data?.message
+
+                if (status === 409) {
+                    return toast.error("Conflito de Horário", {
+                        description: message || "Você já possui um agendamento para este horário."
+                    })
+                }
+
+                if (status === 400) {
+                    return toast.error("Data Inválida", {
+                        description: message || "Não é possível agendar sessões em datas passadas."
+                    })
+                }
+            }
+
+            toast.error("Erro ao criar agendamento.")
+        },
     })
 
     const handleTimeChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
             const newTime = e.target.value
             setTime(newTime)
-
-            // Atualiza o objeto Date se ele já existir, para manter sincronia
             if (date && newTime) {
                 const [h, m] = newTime.split(":")
                 const newDate = new Date(date)
@@ -114,7 +125,6 @@ export function RegisterAppointment({ initialDate, onSuccess }: RegisterAppointm
 
     const handleDateSelect = useCallback(
         (selectedDate: Date | undefined) => {
-            // Se já tiver horário selecionado, mantém o horário na nova data
             if (selectedDate && time) {
                 const [h, m] = time.split(":")
                 selectedDate.setHours(Number(h))
@@ -134,26 +144,25 @@ export function RegisterAppointment({ initialDate, onSuccess }: RegisterAppointm
             if (!time) return toast.error("Selecione um horário.")
             if (!diagnosis.trim()) return toast.error("Informe o diagnóstico.")
 
-            // Combina Data e Hora finais para envio
             const finalDate = new Date(date)
             const [h, m] = time.split(":")
             finalDate.setHours(Number(h), Number(m))
 
             const payload: RegisterAppointmentRequest = {
                 patientId: selectedPatient,
-                psychologistId: "", // Assumindo que o back pega do token ou contexto
+                psychologistId: "",
                 diagnosis: diagnosis.trim(),
                 notes: notes.trim() || undefined,
                 scheduledAt: finalDate,
                 status: "SCHEDULED",
             }
 
-            await registerAppointmentFn(payload)
-
-            // Limpeza do form acontece apenas se o modal NÃO fechar (edge case),
-            // pois o onSuccess geralmente desmonta este componente.
+            try {
+                await registerAppointmentFn(payload)
+            } catch {
+            }
         },
-        [selectedPatient, date, time, diagnosis, notes, registerAppointmentFn, onSuccess],
+        [selectedPatient, date, time, diagnosis, notes, registerAppointmentFn],
     )
 
     const isFormValid = selectedPatient && date && time && diagnosis.trim()
@@ -168,18 +177,13 @@ export function RegisterAppointment({ initialDate, onSuccess }: RegisterAppointm
             </DialogHeader>
 
             <form onSubmit={handleSubmit} className="space-y-5 pt-2">
-                {/* Paciente */}
                 <div className="space-y-2">
                     <Label htmlFor="patient" className="text-sm font-medium flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
                         Paciente
                     </Label>
                     <Select value={selectedPatient} onValueChange={setSelectedPatient}>
-                        <SelectTrigger
-                            id="patient"
-                            className="h-11 w-full transition-colors focus:ring-2 focus:ring-primary/20"
-                            aria-label="Selecionar paciente"
-                        >
+                        <SelectTrigger id="patient" className="h-11 w-full">
                             <SelectValue placeholder={isLoadingPatients ? "Carregando..." : "Selecione o paciente"} />
                         </SelectTrigger>
                         <SelectContent className="max-h-[280px]">
@@ -200,7 +204,6 @@ export function RegisterAppointment({ initialDate, onSuccess }: RegisterAppointm
                     </Select>
                 </div>
 
-                {/* Diagnóstico */}
                 <div className="space-y-2">
                     <Label htmlFor="diagnosis" className="text-sm font-medium flex items-center gap-2">
                         <Stethoscope className="h-4 w-4 text-muted-foreground" />
@@ -208,22 +211,15 @@ export function RegisterAppointment({ initialDate, onSuccess }: RegisterAppointm
                     </Label>
                     <Input
                         id="diagnosis"
-                        name="diagnosis"
                         value={diagnosis}
                         onChange={(e) => setDiagnosis(e.target.value)}
                         placeholder="ex: Ansiedade generalizada"
                         maxLength={90}
-                        className="h-11 transition-colors focus:ring-2 focus:ring-primary/20"
-                        aria-describedby="diagnosis-hint"
+                        className="h-11"
                     />
-                    <p id="diagnosis-hint" className="text-xs text-muted-foreground">
-                        Descreva brevemente o diagnóstico do paciente
-                    </p>
                 </div>
 
-                {/* Data e Hora - Grid Layout */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Data */}
                     <div className="space-y-2">
                         <Label className="text-sm font-medium flex items-center gap-2">
                             <CalendarIcon className="h-4 w-4 text-muted-foreground" />
@@ -231,16 +227,8 @@ export function RegisterAppointment({ initialDate, onSuccess }: RegisterAppointm
                         </Label>
                         <Popover>
                             <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    className="h-11 w-full justify-start font-normal hover:bg-accent/50 transition-colors bg-transparent"
-                                    aria-label="Selecionar data"
-                                >
-                                    {date ? (
-                                        format(date, "dd 'de' MMMM, yyyy", { locale: ptBR })
-                                    ) : (
-                                        <span className="text-muted-foreground">Selecione a data</span>
-                                    )}
+                                <Button variant="outline" className="h-11 w-full justify-start font-normal bg-transparent">
+                                    {date ? format(date, "dd 'de' MMMM, yyyy", { locale: ptBR }) : <span>Selecione a data</span>}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
@@ -256,55 +244,36 @@ export function RegisterAppointment({ initialDate, onSuccess }: RegisterAppointm
                         </Popover>
                     </div>
 
-                    {/* Hora */}
                     <div className="space-y-2">
                         <Label htmlFor="time" className="text-sm font-medium flex items-center gap-2">
                             <Clock className="h-4 w-4 text-muted-foreground" />
                             Horário
                         </Label>
-                        <Input
-                            id="time"
-                            type="time"
-                            value={time}
-                            onChange={handleTimeChange}
-                            className="h-11 transition-colors focus:ring-2 focus:ring-primary/20"
-                            aria-label="Selecionar horário"
-                        />
+                        <Input id="time" type="time" value={time} onChange={handleTimeChange} className="h-11" />
                     </div>
                 </div>
 
-                {/* Notas */}
                 <div className="space-y-2">
                     <Label htmlFor="notes" className="text-sm font-medium flex items-center gap-2">
                         <FileText className="h-4 w-4 text-muted-foreground" />
-                        Notas
-                        <span className="text-muted-foreground font-normal">(opcional)</span>
+                        Notas <span className="text-muted-foreground font-normal">(opcional)</span>
                     </Label>
                     <Textarea
                         id="notes"
-                        name="notes"
-                        placeholder="Adicione observações relevantes sobre o agendamento..."
+                        placeholder="Adicione observações relevantes..."
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         maxLength={MAX_NOTE_LENGTH}
                         rows={3}
-                        className="resize-none transition-colors focus:ring-2 focus:ring-primary/20"
-                        aria-describedby="notes-counter"
+                        className="resize-none"
                     />
-                    <div id="notes-counter" className="flex justify-end text-xs text-muted-foreground">
-                        <span className={notes.length > MAX_NOTE_LENGTH * 0.9 ? "text-amber-500" : undefined}>
-                            {notes.length}/{MAX_NOTE_LENGTH}
-                        </span>
+                    <div className="flex justify-end text-xs text-muted-foreground">
+                        <span>{notes.length}/{MAX_NOTE_LENGTH}</span>
                     </div>
                 </div>
 
-                {/* Submit Button */}
                 <div className="pt-3">
-                    <Button
-                        type="submit"
-                        className="h-11 w-full font-medium transition-all active:scale-[0.98]"
-                        disabled={isPending || !isFormValid}
-                    >
+                    <Button type="submit" className="h-11 w-full font-medium" disabled={isPending || !isFormValid}>
                         {isPending ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
