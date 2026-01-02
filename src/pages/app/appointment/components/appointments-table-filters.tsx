@@ -8,7 +8,6 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Dialog, DialogTrigger } from "@/components/ui/dialog"
 import { RegisterAppointment } from "./register-appointment"
 
@@ -26,7 +25,7 @@ export function AppointmentsTableFilters() {
     const name = searchParams.get("name")
     const status = searchParams.get("status")
 
-    const { register, watch } = useForm<AppointmentsFilterSchema>({
+    const { watch } = useForm<AppointmentsFilterSchema>({
         resolver: zodResolver(appointmentsFilterSchema),
         defaultValues: {
             name: name ?? "",
@@ -69,13 +68,6 @@ export function AppointmentsTableFilters() {
                     className="flex flex-col lg:flex-row gap-3 flex-1 lg:items-center"
                     onSubmit={(e) => e.preventDefault()}
                 >
-                    <div className="flex flex-col lg:flex-row gap-2 flex-1 lg:items-center">
-                        <Input
-                            placeholder="Buscar por Nome"
-                            className="h-8 w-full lg:w-[320px]"
-                            {...register("name")}
-                        />
-                    </div>
                 </form>
 
                 <Dialog>

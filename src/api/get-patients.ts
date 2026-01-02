@@ -1,6 +1,5 @@
 import { api } from "@/lib/axios"
 
-// Definição da interface de filtros
 export interface GetPatientsFilters {
   pageIndex: number
   perPage: number
@@ -8,26 +7,18 @@ export interface GetPatientsFilters {
   status?: string | null | undefined
 }
 
-// Interface corrigida do Paciente
 export interface Patient {
   id: string
   firstName: string
   lastName: string
+  name: string
   cpf: string
   email: string
-  // 🐛 CORREÇÃO 1: Definindo phoneNumber como string (e não opcional) para evitar erro de tipagem.
-  // Se o backend pode retornar undefined, mude para: phoneNumber: string | undefined
   phoneNumber: string 
-  
-  // 🐛 CORREÇÃO 2: Alterando 'MALE'/'FEMALE' para 'MASCULINE'/'FEMININE'
-  // (Baseado na lógica genderConfig do seu componente PatientsTableRowItem)
   gender: 'MASCULINE' | 'FEMININE' | 'OTHER'
-  
-  status: 'Ativo' | 'Inativo' // Sugestão: tornar o status mais específico
+  status: 'Ativo' | 'Inativo' 
   createdAt: string
-  
-  // 🐛 CORREÇÃO 3: ADICIONANDO 'dateOfBirth' (Propriedade ausente que causou o erro 2339)
-  dateOfBirth: string // Supondo que a API retorna como string (ISO date ou similar)
+  dateOfBirth: string 
 }
 
 export interface GetPatientsResponse {
@@ -44,8 +35,8 @@ export async function getPatients({
   perPage,
   filter,
   status,
-}: GetPatientsFilters) {
-  const response = await api.get<GetPatientsResponse>("/patients", {
+}: GetPatientsFilters): Promise<GetPatientsResponse> {
+  const response = await api.get<any>("/patients", { 
     params: {
       pageIndex,
       perPage,
@@ -54,5 +45,34 @@ export async function getPatients({
     },
   })
 
-  return response.data
+  const normalizedPatients: Patient[] = response.data.patients.map((p: any) => {
+    const raw = p.props || p 
+    
+    const fName = raw.firstName || ""
+    const lName = raw.lastName || ""
+
+    return {
+      id: p.id || raw.id || p._id || Math.random().toString(36).substr(2, 9), 
+      
+      firstName: fName,
+      lastName: lName,
+      
+      name: (fName || lName) 
+        ? `${fName} ${lName}`.trim() 
+        : (raw.name || raw.patientName || "Paciente sem nome"),
+      
+      cpf: raw.cpf || "",
+      email: raw.email || "",
+      phoneNumber: raw.phoneNumber || "",
+      gender: raw.gender || 'OTHER',
+      status: raw.status || 'Ativo',
+      createdAt: raw.createdAt || new Date().toISOString(),
+      dateOfBirth: raw.dateOfBirth || ""
+    }
+  })
+
+  return {
+    patients: normalizedPatients,
+    meta: response.data.meta
+  }
 }

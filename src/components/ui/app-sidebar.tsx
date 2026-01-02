@@ -10,6 +10,7 @@ import {
   Wallet,
   CalendarCheck,
   ShieldCheck,
+  HeartPlus,
 } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 
@@ -67,8 +68,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [
           { title: "Meus Agendamentos", url: "/appointment" },
           { title: "Horários de Atendimento", url: "/availability" },
-          { title: "Sala de Atendimento", url: "/video-room" },
           { title: "Histórico de Sessões", url: "#" },
+        ],
+      },
+      {
+        title: "Atendimento",
+        url: "#",
+        icon: HeartPlus,
+        items: [
+          { title: "Sala de Atendimento", url: "/video-room" },
         ],
       },
       {

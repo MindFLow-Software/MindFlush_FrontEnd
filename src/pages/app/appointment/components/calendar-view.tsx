@@ -5,7 +5,7 @@ import { Calendar, dateFnsLocalizer, Views, type View } from "react-big-calendar
 import { format, parse, startOfWeek, getDay } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import "react-big-calendar/lib/css/react-big-calendar.css"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -15,13 +15,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import type { Appointment } from "@/api/get-appointment"
 import { cn } from "@/lib/utils"
 
-const locales = {
-    "pt-BR": ptBR,
-}
-
+const locales = { "pt-BR": ptBR }
 const localizer = dateFnsLocalizer({
     format,
     parse,
@@ -30,75 +26,113 @@ const localizer = dateFnsLocalizer({
     locales,
 })
 
-interface CalendarEvent {
-    id: string
-    title: string
-    start: Date
-    end: Date
-    resource: Appointment
-}
+// Estilos CSS customizados para emular o Google Calendar com Soft UI
+const calendarStyles = `
+  .rbc-calendar { 
+    font-family: inherit; 
+    border: none !important;
+  }
+  
+  /* Cabeçalho dos dias */
+  .rbc-header { 
+    padding: 16px 0 !important; 
+    font-weight: 500 !important; 
+    text-transform: uppercase; 
+    font-size: 11px; 
+    letter-spacing: 0.8px;
+    color: var(--muted-foreground); 
+    border-bottom: 1px solid var(--border) !important;
+    border-left: none !important;
+  }
 
-interface CalendarViewProps {
-    appointments: Appointment[]
-    onSelectSlot: (date: Date) => void
-    onSelectEvent: (appointment: Appointment) => void
-}
+  .rbc-time-view { border: none !important; }
+  .rbc-month-view { border: none !important; }
+  
+  /* Linhas da grade */
+  .rbc-time-content { border-top: 1px solid var(--border) !important; border-left: none !important; }
+  .rbc-timeslot-group { border-bottom: 1px solid var(--border) !important; min-height: 50px !important; }
+  .rbc-day-slot .rbc-time-slot { border-top: 1px solid var(--border) !important; opacity: 0.4; }
+  .rbc-day-bg + .rbc-day-bg { border-left: 1px solid var(--border) !important; }
+  .rbc-time-gutter .rbc-timeslot-group { border: none !important; }
+  
+  /* Gutter de tempo (lateral) */
+  .rbc-label { 
+    font-size: 11px; 
+    color: var(--muted-foreground); 
+    font-weight: 500;
+    padding-right: 12px !important;
+  }
+
+  /* Hoje e Seleção */
+  .rbc-today { background-color: transparent !important; }
+  .rbc-today .rbc-header { color: var(--primary); font-weight: 800 !important; }
+  
+  /* Eventos (Chips) */
+  .rbc-event { 
+    padding: 0 !important; 
+    border: none !important; 
+    background-color: transparent !important;
+  }
+  
+  .rbc-event-label { display: none !important; }
+
+  .rbc-current-time-indicator { 
+    background-color: var(--primary) !important; 
+    height: 2px !important;
+    z-index: 3;
+  }
+  
+  .rbc-current-time-indicator::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: -4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--primary);
+  }
+`;
 
 const CustomToolbar = (toolbar: any) => {
     const goToBack = () => toolbar.onNavigate("PREV")
     const goToNext = () => toolbar.onNavigate("NEXT")
     const goToToday = () => toolbar.onNavigate("TODAY")
 
-    const label = () => {
-        return (
-            <span className="text-xl font-medium text-gray-800 dark:text-gray-100 capitalize ml-2">
-                {format(toolbar.date, "MMMM yyyy", { locale: ptBR })}
-            </span>
-        )
-    }
-
     return (
-        <div className="flex flex-col sm:flex-row items-center justify-between mb-6 px-1 gap-4 sm:gap-0">
-            <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between px-8 py-4 bg-card border-b border-border/50">
+            <div className="flex items-center gap-6">
+                {/* Botão hoje estilo Google */}
+                <Button
+                    variant="outline"
+                    onClick={goToToday}
+                    className="h-9 px-4 text-sm font-bold border-border/60 hover:bg-muted transition-all rounded-md shadow-sm"
+                >
+                    Hoje
+                </Button>
+
+                {/* Navegação */}
                 <div className="flex items-center gap-1">
-                    <Button
-                        variant="outline"
-                        onClick={goToToday}
-                        className="h-9 px-4 text-sm font-medium rounded-md mr-2 border-gray-200 dark:border-gray-700"
-                    >
-                        Hoje
+                    <Button variant="ghost" size="icon" onClick={goToBack} className="h-9 w-9 rounded-full hover:bg-muted">
+                        <ChevronLeft className="h-5 w-5" />
                     </Button>
-                    <div className="flex gap-0.5">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={goToBack}
-                            className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800"
-                        >
-                            <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={goToNext}
-                            className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800"
-                        >
-                            <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                        </Button>
-                    </div>
+                    <Button variant="ghost" size="icon" onClick={goToNext} className="h-9 w-9 rounded-full hover:bg-muted">
+                        <ChevronRight className="h-5 w-5" />
+                    </Button>
                 </div>
-                {label()}
+
+                {/* Data Atual */}
+                <span className="text-xl font-medium text-foreground tracking-tight first-letter:uppercase">
+                    {format(toolbar.date, "MMMM 'de' yyyy", { locale: ptBR })}
+                </span>
             </div>
 
-            <div className="flex items-center">
-                <Select
-                    value={toolbar.view}
-                    onValueChange={(v) => toolbar.onView(v)}
-                >
-                    <SelectTrigger className="w-[110px] h-9 text-sm bg-transparent border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-zinc-800 focus:ring-0">
+            <div className="flex items-center gap-3">
+                <Select value={toolbar.view} onValueChange={(v) => toolbar.onView(v)}>
+                    <SelectTrigger className="w-[120px] h-9 text-xs font-bold uppercase tracking-wider bg-muted/30 border-none shadow-none focus:ring-0">
                         <SelectValue />
                     </SelectTrigger>
-                    <SelectContent align="end">
+                    <SelectContent align="end" className="rounded-xl border-none shadow-2xl">
                         <SelectItem value="month">Mês</SelectItem>
                         <SelectItem value="week">Semana</SelectItem>
                         <SelectItem value="day">Dia</SelectItem>
@@ -110,43 +144,53 @@ const CustomToolbar = (toolbar: any) => {
     )
 }
 
-const CustomEvent = ({ event }: { event: CalendarEvent }) => {
+const CustomEvent = ({ event }: { event: any }) => {
+    const status = event.resource?.status || 'SCHEDULED';
+
+    // Mapeamento de cores estilo Google Calendar (Pastel bg + Dark accent)
+    const statusColors: Record<string, string> = {
+        SCHEDULED: "bg-blue-500/10 border-blue-500 text-blue-700 dark:text-blue-400",
+        ATTENDING: "bg-amber-500/10 border-amber-500 text-amber-700 dark:text-amber-400",
+        FINISHED: "bg-emerald-500/10 border-emerald-500 text-emerald-700 dark:text-emerald-400",
+        CANCELED: "bg-rose-500/10 border-rose-500 text-rose-700 dark:text-rose-400",
+        NOT_ATTEND: "bg-slate-500/10 border-slate-500 text-slate-700 dark:text-slate-400",
+    }
+
+    const colorClass = statusColors[status] || statusColors.SCHEDULED;
+
     return (
-        <div className="h-full w-full px-1.5 py-0.5 flex flex-col overflow-hidden leading-tight hover:brightness-95 transition-all">
-            <span className="font-semibold text-[11px] truncate">{event.title}</span>
-            <span className="text-[10px] opacity-90 truncate">
-                {format(event.start, "HH:mm")} - {format(event.end, "HH:mm")}
+        <div className={cn(
+            "h-full w-full px-2 py-1 flex flex-col border-l-[3px] rounded-r-[4px] transition-all hover:brightness-95 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.05)]",
+            colorClass
+        )}>
+            <span className="font-bold text-[11px] truncate leading-tight">
+                {event.title}
+            </span>
+            <span className="text-[10px] font-medium opacity-80 mt-0.5">
+                {format(event.start, "HH:mm")}
             </span>
         </div>
     )
 }
 
-export function CalendarView({ appointments, onSelectSlot, onSelectEvent }: CalendarViewProps) {
+export function CalendarView({ appointments, onSelectSlot, onSelectEvent }: any) {
     const [view, setView] = useState<View>(Views.WEEK)
     const [date, setDate] = useState(new Date())
 
-    const events = useMemo((): CalendarEvent[] => {
-        return appointments.map((apt) => {
-            const startDate = new Date(apt.scheduledAt)
-            const endDate = new Date(startDate.getTime() + 60 * 60 * 1000)
-
-            // ✅ CORREÇÃO: Usando Optional Chaining (?.) e fallback de texto
-            const patientName = apt.patient
-                ? `${apt.patient.firstName} ${apt.patient.lastName}`
-                : "Paciente Indisponível"
-
-            return {
-                id: apt.id,
-                title: patientName,
-                start: startDate,
-                end: endDate,
-                resource: apt,
-            }
-        })
+    const events = useMemo(() => {
+        return appointments.map((apt: any) => ({
+            id: apt.id,
+            title: apt.title,
+            start: apt.start,
+            end: apt.end,
+            resource: apt,
+        })).filter((e: any) => !isNaN(e.start.getTime()))
     }, [appointments])
 
     return (
-        <div className="h-[calc(100vh-140px)] bg-white dark:bg-zinc-950 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5 calendar-wrapper">
+        <div className="h-full flex flex-col bg-card relative">
+            <style dangerouslySetInnerHTML={{ __html: calendarStyles }} />
+
             <Calendar
                 localizer={localizer}
                 events={events}
@@ -164,56 +208,15 @@ export function CalendarView({ appointments, onSelectSlot, onSelectEvent }: Cale
                 selectable
                 onSelectSlot={({ start }) => onSelectSlot(start)}
                 onSelectEvent={(event) => onSelectEvent(event.resource)}
-                dayPropGetter={(date) => {
-                    const isToday = new Date().toDateString() === date.toDateString();
-                    return {
-                        className: cn(
-                            "bg-white dark:bg-zinc-950 transition-colors cursor-pointer",
-                            isToday ? "bg-blue-50/30 dark:bg-blue-900/10" : "hover:bg-gray-50 dark:hover:bg-zinc-900"
-                        )
-                    }
-                }}
-                eventPropGetter={(event) => {
-                    let backgroundColor = "#039be5"
-                    let borderLeft = "4px solid #0277bd"
-
-                    switch (event.resource.status) {
-                        case 'SCHEDULED':
-                            backgroundColor = "#039be5"
-                            borderLeft = "4px solid #0277bd"
-                            break;
-                        case 'ATTENDING':
-                            backgroundColor = "#f6bf26"
-                            borderLeft = "4px solid #f09300"
-                            break;
-                        case 'FINISHED':
-                            backgroundColor = "#33b679"
-                            borderLeft = "4px solid #0b8043"
-                            break;
-                        case 'CANCELED':
-                            backgroundColor = "#d50000"
-                            borderLeft = "4px solid #b71c1c"
-                            break;
-                        case 'NOT_ATTEND':
-                            backgroundColor = "#616161"
-                            borderLeft = "4px solid #202124"
-                            break;
-                    }
-
-                    return {
-                        style: {
-                            backgroundColor,
-                            border: "none",
-                            borderLeft: borderLeft,
-                            borderRadius: "4px",
-                            color: "white",
-                            fontSize: "12px",
-                            boxShadow: "0 1px 2px rgba(0,0,0,0.12)",
-                            paddingLeft: "4px"
-                        }
-                    }
-                }}
             />
+
+            {/* Botão flutuante estilo Google FAB */}
+            <Button
+                onClick={() => onSelectSlot(new Date())}
+                className="absolute bottom-8 right-8 h-14 w-14 rounded-2xl shadow-2xl bg-primary hover:scale-105 transition-transform z-50 p-0"
+            >
+                <Plus className="h-8 w-8 text-white" />
+            </Button>
         </div>
     )
 }

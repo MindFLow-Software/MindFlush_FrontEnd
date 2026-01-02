@@ -1,16 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useState, useMemo } from "react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { toast } from "sonner"
-import { ChevronDownIcon } from "lucide-react"
+import { ChevronDownIcon, CalendarClock, Trash2, User, FileText, Clock } from "lucide-react"
 
 import {
     DialogContent,
     DialogDescription,
-    DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -23,261 +20,182 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-
+import { Popover, PopoverTrigger } from "@/components/ui/popover"
 import {
     Field,
     FieldGroup,
     FieldSet,
     FieldLabel,
-    FieldLegend,
-    FieldSeparator,
 } from "@/components/ui/field"
 
-import { updateAppointment, type UpdateAppointmentRequest } from "@/api/update-appointment"
-import { getPatients } from "@/api/get-patients"
 import type { Appointment } from "@/api/get-appointment"
-
-const MAX_NOTES_LENGTH = 30
-
 interface EditAppointmentProps {
     appointment: Appointment
     onClose: () => void
+    onCancelTrigger: () => void
+    onRescheduleTrigger: () => void
 }
 
-export function EditAppointment({ appointment, onClose }: EditAppointmentProps) {
-    const queryClient = useQueryClient()
+export function EditAppointment({
+    appointment,
+    onClose,
+    onCancelTrigger,
+    onRescheduleTrigger
+}: EditAppointmentProps) {
 
-    const initialPatientId = appointment.patientId
-    const initialDate = appointment.scheduledAt ? new Date(appointment.scheduledAt) : undefined
-    const initialNotes = appointment.notes || ""
-    const initialDiagnosis = appointment.diagnosis || ""
+    const appointmentData = useMemo(() => {
+        const raw = (appointment as any).props || appointment
+        const patient = raw.patient || raw.patient?.props
 
-    const [date, setDate] = useState<Date | undefined>(initialDate)
-    const [selectedPatient, setSelectedPatient] = useState<string>(initialPatientId)
-    const [notes, setNotes] = useState<string>(initialNotes)
-    const [diagnosis, setDiagnosis] = useState<string>(initialDiagnosis)
+        const fName = patient?.firstName || raw.firstName || ""
+        const lName = patient?.lastName || raw.lastName || ""
+        let pName = `${fName} ${lName}`.trim()
 
-    const [patients, setPatients] = useState<{ id: string; name: string }[]>([])
-
-    useEffect(() => {
-        const fetchPatients = async () => {
-            try {
-                const data = await getPatients({
-                    pageIndex: 0,
-                    perPage: 100,
-                })
-
-                const formatted = data.patients.map((p) => ({
-                    id: p.id,
-                    name: `${p.firstName} ${p.lastName}`,
-                }))
-
-                setPatients(formatted)
-            } catch (error) {
-                console.error(error)
-                toast.error("Não foi possível carregar a lista de pacientes.")
+        if (!pName || pName.toLowerCase() === "paciente") {
+            pName = raw.patientName || (appointment as any).patientName || "Paciente"
+            if (pName.startsWith("Paciente") && pName.length > 8) {
+                pName = pName.replace(/^Paciente\s*/, "").trim()
             }
         }
-        fetchPatients()
-    }, [])
 
-    const { mutateAsync: updateAppointmentFn, isPending } = useMutation({
-        mutationFn: updateAppointment,
-        onSuccess: () => {
-            toast.success("Agendamento atualizado com sucesso!")
-            queryClient.invalidateQueries({ queryKey: ["appointments"] })
-            onClose()
-        },
-        onError: (err: any) => {
-            let errorMessage = "Erro ao atualizar agendamento."
-            if (err.response?.data?.message) {
-                errorMessage = err.response.data.message
-            }
-            toast.error(errorMessage)
-        },
-    })
-
-    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault()
-
-        if (!date) {
-            toast.error("Selecione uma data e hora.")
-            return
-        }
-        if (!diagnosis.trim()) {
-            toast.error("O diagnóstico é obrigatório.")
-            return
-        }
-
-        // Validação de Data: Impede remarcar para o passado
-        if (date.getTime() < new Date().getTime()) {
-            toast.error("Não é possível agendar para o passado.")
-            return
-        }
-
-        const payload: UpdateAppointmentRequest = {
+        return {
             id: appointment.id,
-            diagnosis,
-            notes: notes.trim() || undefined,
-            scheduledAt: date,
+            patientId: raw.patientId || patient?.id || "none",
+            patientName: pName,
+            scheduledAt: raw.scheduledAt || raw.date,
+            notes: raw.notes || "",
+            diagnosis: raw.diagnosis || "",
         }
+    }, [appointment])
 
-        await updateAppointmentFn(payload)
-    }
+    const [date] = useState<Date | undefined>(
+        appointmentData.scheduledAt ? new Date(appointmentData.scheduledAt) : undefined
+    )
 
     return (
-        <DialogContent className="max-h-[85vh] max-w-2xl p-0 flex flex-col gap-0">
-            <DialogHeader className="p-6 pb-2 shrink-0">
-                <DialogTitle>Editar Agendamento</DialogTitle>
-                <DialogDescription>
-                    Atualize as informações do agendamento abaixo.
-                </DialogDescription>
-            </DialogHeader>
+        <DialogContent className="max-h-[90vh] max-w-2xl p-0 flex flex-col gap-0 overflow-hidden border-none shadow-2xl bg-card rounded-xl">
+            <div className="px-8 pt-8 pb-6 border-b border-border/40 bg-card">
+                <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-inner">
+                        <CalendarClock className="size-6" />
+                    </div>
+                    <div className="flex flex-col">
+                        <DialogTitle className="text-xl font-bold tracking-tight text-foreground/90">
+                            Detalhes do Agendamento
+                        </DialogTitle>
+                        <DialogDescription className="text-xs font-medium text-muted-foreground/80 uppercase tracking-wider">
+                            Sessão agendada com: <span className="text-black font-extrabold">{appointmentData.patientName}</span>
+                        </DialogDescription>
+                    </div>
+                </div>
+            </div>
 
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 pb-6">
-                <FieldGroup className="mt-2">
+            {/* AÇÕES CRÍTICAS - CONTAINER INTEGRADO */}
+            <div className="px-8 py-5 bg-muted/20 border-b border-border/40">
+                <div className="grid grid-cols-2 gap-4">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="h-10 rounded-lg border-primary/20 bg-card text-primary font-bold text-xs uppercase tracking-tight hover:bg-primary/5 hover:text-primary transition-all gap-2 shadow-sm"
+                        onClick={onRescheduleTrigger}
+                    >
+                        <Clock className="h-3.5 w-3.5" />
+                        Remarcar Horário
+                    </Button>
+
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="h-10 rounded-lg border-destructive/20 bg-card text-destructive font-bold text-xs uppercase tracking-tight hover:bg-destructive/5 hover:text-destructive transition-all gap-2 shadow-sm"
+                        onClick={onCancelTrigger}
+                    >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Cancelar Sessão
+                    </Button>
+                </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-8 pb-8 pt-6">
+                <FieldGroup>
                     <FieldSet>
-                        <FieldLegend>Dados da Sessão</FieldLegend>
-
-                        <div className="grid grid-cols-1 gap-4">
-
-                            {/* Paciente (Desabilitado para edição) */}
+                        <div className="grid grid-cols-1 gap-6">
+                            {/* PACIENTE */}
                             <Field>
-                                <FieldLabel htmlFor="patient">Paciente</FieldLabel>
-                                <Select
-                                    value={selectedPatient}
-                                    onValueChange={setSelectedPatient}
-                                    disabled // 🔑 Travado: Não alteramos o paciente de uma consulta existente
-                                >
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Selecione o paciente" />
-                                    </SelectTrigger>
-                                    <SelectContent className="max-h-[300px]">
-                                        {patients.length > 0 ? (
-                                            patients.map((p) => (
-                                                <SelectItem key={p.id} value={p.id}>
-                                                    {p.name}
-                                                </SelectItem>
-                                            ))
-                                        ) : (
-                                            <div className="px-3 py-2 text-sm text-muted-foreground">
-                                                Carregando pacientes...
+                                <FieldLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Paciente</FieldLabel>
+                                <div className="relative group">
+                                    <Select value={appointmentData.patientId} disabled>
+                                        <SelectTrigger className="w-full bg-muted/30 border-border/50 opacity-100 font-semibold text-sm h-11 rounded-lg">
+                                            <div className="flex items-center gap-2">
+                                                <User className="size-4 text-primary/60" />
+                                                <SelectValue placeholder={appointmentData.patientName} />
                                             </div>
-                                        )}
-                                    </SelectContent>
-                                </Select>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value={appointmentData.patientId}>
+                                                {appointmentData.patientName}
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </Field>
 
-                            {/* Diagnóstico */}
+                            {/* DIAGNÓSTICO */}
                             <Field>
-                                <FieldLabel htmlFor="diagnosis">Diagnóstico</FieldLabel>
-                                <Input
-                                    id="diagnosis"
-                                    name="diagnosis"
-                                    placeholder="ex: Ansiedade generalizada"
-                                    required
-                                    maxLength={90}
-                                    value={diagnosis}
-                                    onChange={(e) => setDiagnosis(e.target.value)}
-                                />
+                                <FieldLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Diagnóstico Identificado</FieldLabel>
+                                <div className="relative">
+                                    <Input
+                                        value={appointmentData.diagnosis || "Nenhum diagnóstico registrado"}
+                                        disabled
+                                        className="bg-muted/30 border-border/50 h-11 rounded-lg font-medium text-foreground/80 pl-10"
+                                    />
+                                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/40" />
+                                </div>
                             </Field>
 
-                            {/* Data e Hora */}
+                            {/* DATA E HORÁRIO */}
                             <Field>
-                                <FieldLabel>Data e Hora</FieldLabel>
+                                <FieldLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Data e Horário</FieldLabel>
                                 <Popover>
-                                    <PopoverTrigger asChild>
+                                    <PopoverTrigger asChild disabled>
                                         <Button
                                             variant="outline"
-                                            className="w-full justify-between font-normal bg-transparent"
+                                            className="w-full h-11 justify-between font-bold bg-muted/30 border-border/50 rounded-lg text-sm px-4"
                                         >
-                                            {date
-                                                ? format(date, "dd/MM/yyyy HH:mm", { locale: ptBR })
-                                                : "Selecione data e hora"}
-                                            <ChevronDownIcon className="ml-2 h-4 w-4 opacity-50" />
+                                            <div className="flex items-center gap-2">
+                                                <Clock className="size-4 text-primary/60" />
+                                                {date ? format(date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : "Não definido"}
+                                            </div>
+                                            <ChevronDownIcon className="size-4 opacity-30" />
                                         </Button>
                                     </PopoverTrigger>
-
-                                    <PopoverContent className="w-auto overflow-hidden p-0" align="start">
-                                        <Calendar
-                                            mode="single"
-                                            selected={date}
-                                            onSelect={(selectedDate) => {
-                                                if (selectedDate) {
-                                                    const currentDate = new Date();
-                                                    let newDate = new Date(selectedDate);
-
-                                                    // Lógica de buffer de segurança para "Hoje"
-                                                    if (selectedDate.toDateString() === currentDate.toDateString()) {
-                                                        const nowPlusBuffer = new Date(currentDate.getTime() + 15 * 60000);
-                                                        newDate.setHours(nowPlusBuffer.getHours());
-                                                        newDate.setMinutes(nowPlusBuffer.getMinutes());
-                                                    } else if (date) {
-                                                        // Mantém a hora anterior se mudar apenas o dia
-                                                        newDate.setHours(date.getHours());
-                                                        newDate.setMinutes(date.getMinutes());
-                                                    } else {
-                                                        newDate.setHours(8); // Hora padrão razoável
-                                                        newDate.setMinutes(0);
-                                                    }
-                                                    setDate(newDate);
-                                                }
-                                            }}
-                                            fromYear={1900}
-                                            toYear={new Date().getFullYear() + 2}
-                                            locale={ptBR}
-                                        />
-                                        <div className="border-t p-3 bg-muted/40">
-                                            <Input
-                                                type="time"
-                                                className="w-full"
-                                                value={date ? format(date, "HH:mm") : ""}
-                                                onChange={(e) => {
-                                                    if (date && e.target.value) {
-                                                        const [h, m] = e.target.value.split(":");
-                                                        const newDate = new Date(date);
-                                                        newDate.setHours(Number(h));
-                                                        newDate.setMinutes(Number(m));
-                                                        setDate(newDate);
-                                                    }
-                                                }}
-                                            />
-                                        </div>
-                                    </PopoverContent>
                                 </Popover>
                             </Field>
 
-                            {/* Notas */}
+                            {/* NOTAS */}
                             <Field>
-                                <FieldLabel htmlFor="notes">Notas (opcional)</FieldLabel>
+                                <FieldLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Notas Internas</FieldLabel>
                                 <Textarea
-                                    id="notes"
-                                    name="notes"
-                                    placeholder="Adicione observações..."
-                                    value={notes}
-                                    onChange={(e) => setNotes(e.target.value)}
-                                    maxLength={MAX_NOTES_LENGTH}
+                                    value={appointmentData.notes || "Sem observações para esta sessão."}
+                                    disabled
                                     rows={4}
-                                    className="w-full resize-none"
+                                    className="resize-none bg-muted/30 border-border/50 rounded-xl font-medium text-foreground/70 p-4 text-sm leading-relaxed"
                                 />
-                                <div className="text-xs text-muted-foreground text-right">
-                                    {notes.length}/{MAX_NOTES_LENGTH} caracteres
-                                </div>
                             </Field>
                         </div>
                     </FieldSet>
-
-                    <FieldSeparator />
-
-                    <Field orientation="horizontal">
-                        <Button className="w-full" type="submit" disabled={isPending}>
-                            {isPending ? "Salvando..." : "Salvar Alterações"}
-                        </Button>
-                    </Field>
                 </FieldGroup>
-            </form>
+            </div>
+
+            {/* FOOTER PADRONIZADO */}
+            <div className="px-8 py-5 border-t border-border/40 bg-muted/10 flex items-center justify-end gap-3">
+                <Button
+                    type="button"
+                    onClick={onClose}
+                    className="cursor-pointer bg-blue-600 hover:bg-blue-700 w-full sm:w-auto min-w-[150px]"
+                >
+                    Fechar Detalhes
+                </Button>
+            </div>
         </DialogContent>
     )
 }
