@@ -66,6 +66,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: CalendarCheck,
         items: [
           { title: "Meus Agendamentos", url: "/appointment" },
+          { title: "Horários de Atendimento", url: "/availability" },
           { title: "Sala de Atendimento", url: "/video-room" },
           { title: "Histórico de Sessões", url: "#" },
         ],

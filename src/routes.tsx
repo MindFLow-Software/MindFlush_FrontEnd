@@ -12,6 +12,7 @@ import { MockPsychologistProfilePage } from './pages/app/account/account'
 import { LandingPage } from './pages/landing-page/landing-page'
 import { DashboardFinance } from './pages/app/finance/dashboard-finance'
 import { AdminApprovalsPage } from './pages/app/admin/approvals'
+import { AvailabilityPage } from './pages/app/appointment/availability-page'
 
 const getUser = () => {
   const userData = localStorage.getItem('user')
@@ -109,6 +110,7 @@ export const router = createBrowserRouter([
       { path: '/patients-list', element: <PatientsList /> },
       { path: '/video-room', element: <AppointmentsRoom /> },
       { path: '/appointment', element: <AppointmentsList /> },
+      { path: '/availability', element: <AvailabilityPage /> },
       { path: '/account', element: <MockPsychologistProfilePage /> },
       { path: '/perfil', element: <MockPsychologistProfilePage /> },
       {

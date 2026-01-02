@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Search, Trash2, UserPen, Mars, Venus, Users, CircleUser, CalendarDays, Phone, Fingerprint, Mail } from "lucide-react"
+import { Search, Trash2, UserPen, Mars, Venus, Users, CircleUser, CalendarDays, Phone, Fingerprint, AtSign } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -28,8 +28,10 @@ import { formatCPF } from "@/utils/formatCPF"
 import { formatPhone } from "@/utils/formatPhone"
 import { formatAGE } from "@/utils/formatAGE"
 
-const getInitials = (first: string, last: string) => {
-    return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase()
+const getInitials = (first?: string, last?: string) => {
+    const f = String(first || "").trim().charAt(0)
+    const l = String(last || "").trim().charAt(0)
+    return (f + l).toUpperCase() || "??"
 }
 
 interface PatientsTableProps {
@@ -47,7 +49,9 @@ export function PatientsTable({ patients, isLoading, perPage = 10 }: PatientsTab
                         <TableHead className="w-[50px]"></TableHead>
                         <TableHead className="text-xs uppercase tracking-wider font-semibold">Paciente</TableHead>
                         <TableHead className="text-xs uppercase tracking-wider font-semibold">Documento</TableHead>
-                        <TableHead className="text-xs uppercase tracking-wider font-semibold">Contato</TableHead>
+                        <TableHead className="text-xs uppercase tracking-wider font-semibold">Telefone</TableHead>
+                        <TableHead className="text-xs uppercase tracking-wider font-semibold">Email</TableHead>
+
                         <TableHead className="text-xs uppercase tracking-wider font-semibold">Idade / Nasc.</TableHead>
                         <TableHead className="text-xs uppercase tracking-wider font-semibold">Gênero</TableHead>
                         <TableHead className="text-right pr-6 text-xs uppercase tracking-wider font-semibold">Ações</TableHead>
@@ -57,7 +61,7 @@ export function PatientsTable({ patients, isLoading, perPage = 10 }: PatientsTab
                 <TableBody>
                     {isLoading ? (
                         Array.from({ length: perPage }).map((_, i) => (
-                            <TableRow key={i}>
+                            <TableRow key={`skeleton-${i}`}>
                                 <TableCell colSpan={7}>
                                     <div className="flex items-center gap-4">
                                         <Skeleton className="h-10 w-10 rounded-full" />
@@ -66,9 +70,12 @@ export function PatientsTable({ patients, isLoading, perPage = 10 }: PatientsTab
                                 </TableCell>
                             </TableRow>
                         ))
-                    ) : patients.length > 0 ? (
-                        patients.map((patient) => (
-                            <PatientsTableRowItem key={patient.id} patient={patient} />
+                    ) : patients && patients.length > 0 ? (
+                        patients.map((patient, index) => (
+                            <PatientsTableRowItem
+                                key={patient.id || `patient-${index}`}
+                                patient={patient}
+                            />
                         ))
                     ) : (
                         <TableRow>
@@ -89,12 +96,23 @@ export function PatientsTable({ patients, isLoading, perPage = 10 }: PatientsTab
 }
 
 function PatientsTableRowItem({ patient }: { patient: Patient }) {
-    const p = patient as Patient & {
-        role?: "PATIENT" | "ADMIN" | "DOCTOR";
-        profileImageUrl?: string
-    }
+    const p = ((patient as any)?.props
+        ? { id: patient.id, ...(patient as any).props }
+        : patient) as any
 
-    const { id, cpf, email, firstName, lastName, dateOfBirth, phoneNumber, gender, status, role, profileImageUrl } = p
+    const {
+        id,
+        cpf = "",
+        email = "",
+        firstName = "N/A",
+        lastName = "",
+        dateOfBirth,
+        phoneNumber = "",
+        gender = "OTHER",
+        status = "Inativo",
+        role = "PATIENT",
+        profileImageUrl = ""
+    } = p
 
     const [isDetailsOpen, setIsDetailsOpen] = useState(false)
     const [isEditOpen, setIsEditOpen] = useState(false)
@@ -109,10 +127,18 @@ function PatientsTableRowItem({ patient }: { patient: Patient }) {
         }
     })
 
+    const isValidDate = dateOfBirth && !isNaN(new Date(dateOfBirth).getTime())
+
     const patientDataForEdit: UpdatePatientData = {
-        id, firstName, lastName, email, cpf, phoneNumber,
-        dateOfBirth: new Date(dateOfBirth),
-        gender, role: role || "PATIENT",
+        id,
+        firstName,
+        lastName,
+        email,
+        cpf,
+        phoneNumber,
+        dateOfBirth: isValidDate ? new Date(dateOfBirth) : new Date(),
+        gender,
+        role: role || "PATIENT",
         isActive: status === "Ativo",
         profileImageUrl
     }
@@ -183,7 +209,7 @@ function PatientsTableRowItem({ patient }: { patient: Patient }) {
             <TableCell>
                 <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 border border-transparent group-hover:border-muted-foreground/10 transition-colors font-mono text-xs font-medium tabular-nums">
                     <Fingerprint className="h-3.5 w-3.5 text-muted-foreground" />
-                    {formatCPF(cpf)}
+                    {cpf ? formatCPF(cpf) : "---"}
                 </div>
             </TableCell>
 
@@ -191,11 +217,16 @@ function PatientsTableRowItem({ patient }: { patient: Patient }) {
                 <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-1.5">
                         <Phone className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs font-medium tabular-nums">{formatPhone(phoneNumber)}</span>
+                        <span className="text-xs font-medium tabular-nums">{phoneNumber ? formatPhone(phoneNumber) : "---"}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 opacity-70">
-                        <Mail className="h-3 w-3 text-muted-foreground shrink-0" />
-                        <span className="text-[10px] truncate max-w-[140px] lowercase">{email}</span>
+                </div>
+            </TableCell>
+
+            <TableCell>
+                <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5">
+                        <AtSign className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs font-medium tabular-nums">{email || "---"}</span>
                     </div>
                 </div>
             </TableCell>
@@ -203,11 +234,11 @@ function PatientsTableRowItem({ patient }: { patient: Patient }) {
             <TableCell>
                 <div className="flex flex-col">
                     <span className="text-sm font-semibold tabular-nums tracking-tight">
-                        {formatAGE(dateOfBirth)} anos
+                        {isValidDate ? `${formatAGE(dateOfBirth)} anos` : "N/A"}
                     </span>
                     <span className="text-[10px] text-muted-foreground/70 flex items-center gap-1 uppercase font-medium">
                         <CalendarDays className="h-2.5 w-2.5" />
-                        {new Date(dateOfBirth).toLocaleDateString("pt-BR")}
+                        {isValidDate ? new Date(dateOfBirth).toLocaleDateString("pt-BR") : "---"}
                     </span>
                 </div>
             </TableCell>
@@ -256,7 +287,6 @@ function PatientsTableRowItem({ patient }: { patient: Patient }) {
                 </div>
             </TableCell>
 
-            {/* DIALOGS - CENTRALIZADOS */}
             <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
                 {isDetailsOpen && <PatientsDetails patientId={id} />}
             </Dialog>
