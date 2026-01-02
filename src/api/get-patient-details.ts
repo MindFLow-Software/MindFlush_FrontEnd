@@ -17,11 +17,20 @@ export interface GetPatientDetailsResponse {
       status: 'Concluída' | 'Pendente'
     }>
   }
+  meta: {
+    pageIndex: number
+    perPage: number
+    totalCount: number
+    averageDuration: number
+  }
 }
 
-export async function getPatientDetails(patientId: string) {
+export async function getPatientDetails(patientId: string, pageIndex: number) {
   const response = await api.get<GetPatientDetailsResponse>(
-    `/patients/${patientId}/details`
+    `/patients/${patientId}/details`,
+    {
+      params: { pageIndex },
+    }
   )
 
   return response.data

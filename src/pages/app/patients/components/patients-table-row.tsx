@@ -14,7 +14,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Dialog } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
@@ -145,7 +145,6 @@ function PatientsTableRowItem({ patient }: { patient: Patient }) {
 
     return (
         <TableRow className="group hover:bg-muted/50 transition-all duration-200 border-l-2 border-l-transparent hover:border-l-primary/50">
-            {/* SEARCH / DETAILS */}
             <TableCell className="w-[50px]">
                 <TooltipProvider delayDuration={100}>
                     <Tooltip>
@@ -159,12 +158,11 @@ function PatientsTableRowItem({ patient }: { patient: Patient }) {
                                 <Search className="h-4 w-4" />
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent side="right" className="text-xs">Mais informações</TooltipContent>
+                        <TooltipContent side="right" className="text-xs">Ver prontuário</TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
             </TableCell>
 
-            {/* AVATAR & NAME */}
             <TableCell>
                 <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10 ring-2 ring-background shadow-sm border">
@@ -182,15 +180,13 @@ function PatientsTableRowItem({ patient }: { patient: Patient }) {
                 </div>
             </TableCell>
 
-            {/* CPF */}
             <TableCell>
-                <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 border border-transparent group-hover:border-muted-foreground/10 transition-colors">
+                <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 border border-transparent group-hover:border-muted-foreground/10 transition-colors font-mono text-xs font-medium tabular-nums">
                     <Fingerprint className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="font-mono text-xs font-medium">{formatCPF(cpf)}</span>
+                    {formatCPF(cpf)}
                 </div>
             </TableCell>
 
-            {/* CONTACT INFO */}
             <TableCell>
                 <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-1.5">
@@ -199,12 +195,11 @@ function PatientsTableRowItem({ patient }: { patient: Patient }) {
                     </div>
                     <div className="flex items-center gap-1.5 opacity-70">
                         <Mail className="h-3 w-3 text-muted-foreground shrink-0" />
-                        <span className="text-[10px] truncate max-w-[140px]">{email}</span>
+                        <span className="text-[10px] truncate max-w-[140px] lowercase">{email}</span>
                     </div>
                 </div>
             </TableCell>
 
-            {/* AGE / BIRTHDATE */}
             <TableCell>
                 <div className="flex flex-col">
                     <span className="text-sm font-semibold tabular-nums tracking-tight">
@@ -217,7 +212,6 @@ function PatientsTableRowItem({ patient }: { patient: Patient }) {
                 </div>
             </TableCell>
 
-            {/* GENDER */}
             <TableCell>
                 <Badge
                     variant="outline"
@@ -228,9 +222,8 @@ function PatientsTableRowItem({ patient }: { patient: Patient }) {
                 </Badge>
             </TableCell>
 
-            {/* ACTIONS */}
             <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-2 pr-2">
                     <TooltipProvider delayDuration={100}>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -263,17 +256,9 @@ function PatientsTableRowItem({ patient }: { patient: Patient }) {
                 </div>
             </TableCell>
 
-            {/* DIALOGS */}
+            {/* DIALOGS - CENTRALIZADOS */}
             <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-                {isDetailsOpen && (
-                    <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                            <DialogTitle>Prontuário Digital</DialogTitle>
-                            <DialogDescription>Dados completos e histórico do paciente.</DialogDescription>
-                        </DialogHeader>
-                        <PatientsDetails patientId={p.id} />
-                    </DialogContent>
-                )}
+                {isDetailsOpen && <PatientsDetails patientId={id} />}
             </Dialog>
 
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
