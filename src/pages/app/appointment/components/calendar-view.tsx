@@ -5,7 +5,7 @@ import { Calendar, dateFnsLocalizer, Views, type View } from "react-big-calendar
 import { format, parse, startOfWeek, getDay } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import "react-big-calendar/lib/css/react-big-calendar.css"
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -26,14 +26,8 @@ const localizer = dateFnsLocalizer({
     locales,
 })
 
-// Estilos CSS customizados para emular o Google Calendar com Soft UI
 const calendarStyles = `
-  .rbc-calendar { 
-    font-family: inherit; 
-    border: none !important;
-  }
-  
-  /* Cabeçalho dos dias */
+  .rbc-calendar { font-family: inherit; border: none !important; }
   .rbc-header { 
     padding: 16px 0 !important; 
     font-weight: 500 !important; 
@@ -44,44 +38,17 @@ const calendarStyles = `
     border-bottom: 1px solid var(--border) !important;
     border-left: none !important;
   }
-
-  .rbc-time-view { border: none !important; }
-  .rbc-month-view { border: none !important; }
-  
-  /* Linhas da grade */
+  .rbc-time-view, .rbc-month-view { border: none !important; }
   .rbc-time-content { border-top: 1px solid var(--border) !important; border-left: none !important; }
   .rbc-timeslot-group { border-bottom: 1px solid var(--border) !important; min-height: 50px !important; }
   .rbc-day-slot .rbc-time-slot { border-top: 1px solid var(--border) !important; opacity: 0.4; }
   .rbc-day-bg + .rbc-day-bg { border-left: 1px solid var(--border) !important; }
-  .rbc-time-gutter .rbc-timeslot-group { border: none !important; }
-  
-  /* Gutter de tempo (lateral) */
-  .rbc-label { 
-    font-size: 11px; 
-    color: var(--muted-foreground); 
-    font-weight: 500;
-    padding-right: 12px !important;
-  }
-
-  /* Hoje e Seleção */
+  .rbc-label { font-size: 11px; color: var(--muted-foreground); font-weight: 500; padding-right: 12px !important; }
   .rbc-today { background-color: transparent !important; }
   .rbc-today .rbc-header { color: var(--primary); font-weight: 800 !important; }
-  
-  /* Eventos (Chips) */
-  .rbc-event { 
-    padding: 0 !important; 
-    border: none !important; 
-    background-color: transparent !important;
-  }
-  
+  .rbc-event { padding: 0 !important; border: none !important; background-color: transparent !important; }
   .rbc-event-label { display: none !important; }
-
-  .rbc-current-time-indicator { 
-    background-color: var(--primary) !important; 
-    height: 2px !important;
-    z-index: 3;
-  }
-  
+  .rbc-current-time-indicator { background-color: var(--primary) !important; height: 2px !important; z-index: 3; }
   .rbc-current-time-indicator::before {
     content: '';
     position: absolute;
@@ -102,7 +69,6 @@ const CustomToolbar = (toolbar: any) => {
     return (
         <div className="flex items-center justify-between px-8 py-4 bg-card border-b border-border/50">
             <div className="flex items-center gap-6">
-                {/* Botão hoje estilo Google */}
                 <Button
                     variant="outline"
                     onClick={goToToday}
@@ -110,8 +76,6 @@ const CustomToolbar = (toolbar: any) => {
                 >
                     Hoje
                 </Button>
-
-                {/* Navegação */}
                 <div className="flex items-center gap-1">
                     <Button variant="ghost" size="icon" onClick={goToBack} className="h-9 w-9 rounded-full hover:bg-muted">
                         <ChevronLeft className="h-5 w-5" />
@@ -120,26 +84,22 @@ const CustomToolbar = (toolbar: any) => {
                         <ChevronRight className="h-5 w-5" />
                     </Button>
                 </div>
-
-                {/* Data Atual */}
                 <span className="text-xl font-medium text-foreground tracking-tight first-letter:uppercase">
                     {format(toolbar.date, "MMMM 'de' yyyy", { locale: ptBR })}
                 </span>
             </div>
 
-            <div className="flex items-center gap-3">
-                <Select value={toolbar.view} onValueChange={(v) => toolbar.onView(v)}>
-                    <SelectTrigger className="w-[120px] h-9 text-xs font-bold uppercase tracking-wider bg-muted/30 border-none shadow-none focus:ring-0">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent align="end" className="rounded-xl border-none shadow-2xl">
-                        <SelectItem value="month">Mês</SelectItem>
-                        <SelectItem value="week">Semana</SelectItem>
-                        <SelectItem value="day">Dia</SelectItem>
-                        <SelectItem value="agenda">Agenda</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
+            <Select value={toolbar.view} onValueChange={(v) => toolbar.onView(v)}>
+                <SelectTrigger className="w-[120px] h-9 text-xs font-bold uppercase tracking-wider bg-muted/30 border-none shadow-none focus:ring-0">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end" className="rounded-xl border-none shadow-2xl">
+                    <SelectItem value="month">Mês</SelectItem>
+                    <SelectItem value="week">Semana</SelectItem>
+                    <SelectItem value="day">Dia</SelectItem>
+                    <SelectItem value="agenda">Agenda</SelectItem>
+                </SelectContent>
+            </Select>
         </div>
     )
 }
@@ -147,7 +107,6 @@ const CustomToolbar = (toolbar: any) => {
 const CustomEvent = ({ event }: { event: any }) => {
     const status = event.resource?.status || 'SCHEDULED';
 
-    // Mapeamento de cores estilo Google Calendar (Pastel bg + Dark accent)
     const statusColors: Record<string, string> = {
         SCHEDULED: "bg-blue-500/10 border-blue-500 text-blue-700 dark:text-blue-400",
         ATTENDING: "bg-amber-500/10 border-amber-500 text-amber-700 dark:text-amber-400",
@@ -178,17 +137,27 @@ export function CalendarView({ appointments, onSelectSlot, onSelectEvent }: any)
     const [date, setDate] = useState(new Date())
 
     const events = useMemo(() => {
-        return appointments.map((apt: any) => ({
-            id: apt.id,
-            title: apt.title,
-            start: apt.start,
-            end: apt.end,
-            resource: apt,
-        })).filter((e: any) => !isNaN(e.start.getTime()))
+        return appointments.map((apt: any) => {
+            // Reforço de segurança para o título (Nome do Paciente)
+            const raw = apt.props || apt;
+            const p = raw.patient?.props || raw.patient || apt.patient || raw.user;
+
+            const firstName = p?.firstName || p?.first_name || raw.patientFirstName || "";
+            const lastName = p?.lastName || p?.last_name || raw.patientLastName || "";
+            const fallbackName = `${firstName} ${lastName}`.trim();
+
+            return {
+                id: apt.id || raw.id,
+                title: apt.title || apt.patientName || fallbackName || "Paciente",
+                start: apt.start || new Date(raw.scheduledAt),
+                end: apt.end || new Date(raw.endedAt || new Date(apt.start).getTime() + 3600000),
+                resource: apt,
+            }
+        }).filter((e: any) => e.start && !isNaN(e.start.getTime()))
     }, [appointments])
 
     return (
-        <div className="h-full flex flex-col bg-card relative">
+        <div className="h-full flex flex-col bg-card relative overflow-hidden">
             <style dangerouslySetInnerHTML={{ __html: calendarStyles }} />
 
             <Calendar
@@ -199,6 +168,15 @@ export function CalendarView({ appointments, onSelectSlot, onSelectEvent }: any)
                 view={view}
                 onView={setView}
                 culture="pt-BR"
+                messages={{
+                    today: 'Hoje',
+                    previous: 'Anterior',
+                    next: 'Próximo',
+                    month: 'Mês',
+                    week: 'Semana',
+                    day: 'Dia',
+                    agenda: 'Agenda',
+                }}
                 components={{
                     toolbar: CustomToolbar,
                     event: CustomEvent,
@@ -209,14 +187,6 @@ export function CalendarView({ appointments, onSelectSlot, onSelectEvent }: any)
                 onSelectSlot={({ start }) => onSelectSlot(start)}
                 onSelectEvent={(event) => onSelectEvent(event.resource)}
             />
-
-            {/* Botão flutuante estilo Google FAB */}
-            <Button
-                onClick={() => onSelectSlot(new Date())}
-                className="absolute bottom-8 right-8 h-14 w-14 rounded-2xl shadow-2xl bg-primary hover:scale-105 transition-transform z-50 p-0"
-            >
-                <Plus className="h-8 w-8 text-white" />
-            </Button>
         </div>
     )
 }

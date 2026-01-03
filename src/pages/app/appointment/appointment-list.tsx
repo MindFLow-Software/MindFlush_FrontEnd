@@ -11,6 +11,7 @@ import { CalendarIcon, Plus } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { AppointmentsTableFilters } from "./components/appointments-table-filters"
 import { CalendarView } from "./components/calendar-view"
@@ -23,7 +24,6 @@ import { getAppointments, type GetAppointmentsResponse, type Appointment } from 
 import { rescheduleAppointment } from "@/api/reschedule-appointment"
 import { cancelAppointment } from "@/api/cancel-appointment"
 import { useHeaderStore } from "@/hooks/use-header-store"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 export function AppointmentsList() {
     const { setTitle } = useHeaderStore()
@@ -63,14 +63,24 @@ export function AppointmentsList() {
         select: (data) => ({
             ...data,
             appointments: data.appointments.map((app: any) => {
-                const raw = app.props || app;
-                const p = raw.patient?.props || raw.patient || app.patient;
-                const firstName = p?.firstName || raw.patientFirstName || "";
-                const lastName = p?.lastName || raw.patientLastName || "";
-                let pName = `${firstName} ${lastName}`.trim() || "Paciente";
+                const raw = app.props || app
+                const p = raw.patient?.props || raw.patient || app.patient || raw.user
 
-                const startDate = new Date(raw.scheduledAt || raw.date || app.scheduledAt);
-                const endDate = raw.endedAt ? new Date(raw.endedAt) : new Date(startDate.getTime() + 60 * 60 * 1000);
+                const apiName = raw.patientName || app.patientName || raw.patient_name || app.patient_name
+                const firstName = p?.firstName || p?.first_name || raw.patientFirstName || ""
+                const lastName = p?.lastName || p?.last_name || raw.patientLastName || ""
+
+                let pName = `${firstName} ${lastName}`.trim()
+                if (!pName || pName === "null null") pName = apiName
+                if (!pName) pName = "Paciente"
+
+                const scheduledAtValue = raw.scheduledAt || raw.date || app.scheduledAt || raw.scheduled_at
+                const startDate = new Date(scheduledAtValue)
+
+                const endedAtValue = raw.endedAt || raw.ended_at
+                const endDate = endedAtValue
+                    ? new Date(endedAtValue)
+                    : new Date(startDate.getTime() + 60 * 60 * 1000)
 
                 return {
                     ...app,
@@ -80,7 +90,7 @@ export function AppointmentsList() {
                     end: endDate,
                     patientName: pName,
                     status: raw.status || app.status
-                };
+                }
             })
         }),
         staleTime: 1000 * 60 * 5,
@@ -126,13 +136,12 @@ export function AppointmentsList() {
             </div>
         )
     }
-    
+
     return (
         <>
             <Helmet title="Agenda" />
 
             <div className="flex flex-col h-[calc(100vh-4rem)] bg-background overflow-hidden relative">
-                {/* Header de Filtros integrado ao Estilo Google */}
                 <div className="flex items-center px-8 py-3 gap-6 bg-card border-b border-border/40 shrink-0 z-20">
                     <div className="flex items-center gap-3">
                         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-inner">
@@ -176,7 +185,7 @@ export function AppointmentsList() {
                 </div>
 
                 <TooltipProvider>
-                    <Tooltip>
+                    <Tooltip delayDuration={300}>
                         <TooltipTrigger asChild>
                             <Button
                                 onClick={() => {
@@ -189,7 +198,7 @@ export function AppointmentsList() {
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent
-                            side="top"
+                            side="left"
                             className="flex items-center gap-2 bg-zinc-900 text-zinc-50 border-none px-4 py-2 text-xs font-bold uppercase tracking-widest shadow-xl"
                         >
                             <p>Novo Agendamento</p>
@@ -197,7 +206,6 @@ export function AppointmentsList() {
                     </Tooltip>
                 </TooltipProvider>
 
-                {/* DIALOGS PADRONIZADOS */}
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                     <RegisterAppointment
                         initialDate={selectedDate}
@@ -231,7 +239,8 @@ export function AppointmentsList() {
                                 isCancelling={isCancelling}
                                 onClose={() => setIsCancelOpen(false)}
                                 onCancel={async () => {
-                                    const id = selectedAppointment.id || (selectedAppointment as any).props?.id
+                                    const raw = (selectedAppointment as any).props || selectedAppointment
+                                    const id = selectedAppointment.id || raw.id
                                     if (id) await cancelFn(id)
                                 }}
                             />
@@ -247,7 +256,8 @@ export function AppointmentsList() {
                                 isRescheduling={isRescheduling}
                                 onClose={() => setIsRescheduleOpen(false)}
                                 onReschedule={async (newDate) => {
-                                    const id = selectedAppointment.id || (selectedAppointment as any).props?.id
+                                    const raw = (selectedAppointment as any).props || selectedAppointment
+                                    const id = selectedAppointment.id || raw.id
                                     if (id) await rescheduleFn({ appointmentId: id, newDate })
                                 }}
                             />
