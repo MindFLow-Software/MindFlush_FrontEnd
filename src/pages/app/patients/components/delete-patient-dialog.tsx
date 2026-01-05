@@ -58,7 +58,7 @@ export function DeletePatientDialog({ fullName, isActive, onClose, onInactivate,
                     variant="ghost"
                     onClick={onClose}
                     disabled={isPending}
-                    className="h-14 w-full rounded-none border-r text-base font-medium text-zinc-600"
+                    className="cursor-pointer h-14 w-full rounded-none border-r text-base font-medium text-zinc-600"
                 >
                     Cancelar
                 </Button>
@@ -67,7 +67,7 @@ export function DeletePatientDialog({ fullName, isActive, onClose, onInactivate,
                     variant="ghost"
                     onClick={handleAction}
                     disabled={isPending}
-                    className={`h-14 w-full rounded-none text-base font-bold ${isActive ? 'text-red-600 hover:bg-red-50' : 'text-emerald-600 hover:bg-emerald-50'}`}
+                    className={`cursor-pointer h-14 w-full rounded-none text-base font-bold ${isActive ? 'text-red-700 hover:bg-red-400' : 'text-emerald-700 hover:bg-emerald-400'}`}
                 >
                     {isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />

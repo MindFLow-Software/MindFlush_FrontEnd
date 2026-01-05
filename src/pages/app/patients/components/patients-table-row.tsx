@@ -176,7 +176,7 @@ export function PatientsTableRow({ patient }: PatientsTableRowProps) {
                                     size="icon"
                                     variant="ghost"
                                     onClick={() => setIsEditOpen(true)}
-                                    className="h-8 w-8 rounded-lg transition-colors text-muted-foreground hover:text-blue-600 hover:bg-blue-50"
+                                    className="cursor-pointer h-8 w-8 rounded-lg transition-colors text-muted-foreground hover:text-blue-600 hover:bg-blue-50"
                                 >
                                     <UserPen className="h-4 w-4" />
                                 </Button>
@@ -190,7 +190,7 @@ export function PatientsTableRow({ patient }: PatientsTableRowProps) {
                                     size="icon"
                                     variant="ghost"
                                     onClick={() => setIsDeleteOpen(true)}
-                                    className={`h-8 w-8 rounded-lg transition-colors text-muted-foreground ${isActive
+                                    className={`cursor-pointer h-8 w-8 rounded-lg transition-colors text-muted-foreground ${isActive
                                             ? 'hover:text-red-600 hover:bg-red-50'
                                             : 'hover:text-emerald-600 hover:bg-emerald-50'
                                         }`}
