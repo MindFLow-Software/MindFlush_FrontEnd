@@ -1,24 +1,23 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { Helmet } from "react-helmet-async"
 import { useQuery } from "@tanstack/react-query"
 
 import { Pagination } from "@/components/pagination"
 import { PatientsTableFilters } from "./components/patients-table-filters"
-import { PatientsTable } from "./components/patients-table-row"
-import { useHeaderStore } from "@/hooks/use-header-store"
+import { PatientsTable } from "./components/patients-table"
 import { AchievementToast } from "@/components/achievement-toast"
 
-import { getPatients, type GetPatientsResponse, type GetPatientsFilters } from "@/api/get-patients" // Importamos GetPatientsFilters para tipagem
+import { useHeaderStore } from "@/hooks/use-header-store"
 import { usePatientAchievements } from "@/hooks/use-patient-achievements"
 import { usePatientFilters } from "@/hooks/use-patient-filters"
-
+import { getPatients } from "@/api/get-patients"
 
 export function PatientsList() {
     const { setTitle } = useHeaderStore()
 
-    const { filters, setPage } = usePatientFilters() as unknown as { filters: GetPatientsFilters, setPage: (pageIndex: number) => void };
+    const { filters, setPage } = usePatientFilters()
 
     const { achievement, checkAchievement, clearAchievement } = usePatientAchievements()
 
@@ -26,24 +25,35 @@ export function PatientsList() {
         setTitle('Cadastro de Pacientes')
     }, [setTitle])
 
-    // 🔍 LOG DE DEBUG
-    console.log("Filtros Atuais para useQuery:", filters)
-
-    // 3. Busca de Dados
-    const { data: result, isLoading, isError } = useQuery<GetPatientsResponse>({
-        queryKey: ["patients", filters.pageIndex, filters.perPage, filters.filter, filters.status],
-        queryFn: () => getPatients(filters),
+    const { data: result, isLoading, isError } = useQuery({
+        queryKey: ["patients", filters.pageIndex, filters.filter, filters.status],
+        queryFn: () => getPatients({
+            pageIndex: filters.pageIndex,
+            perPage: filters.perPage,
+            filter: filters.filter,
+            status: filters.status,
+        }),
         staleTime: 1000 * 60 * 5,
         placeholderData: (previousData) => previousData,
     })
 
-    const patients = result?.patients ?? []
-    const meta = result?.meta ?? { pageIndex: 0, perPage: filters.perPage, totalCount: 0 }
+    const patients = useMemo(() => result?.patients ?? [], [result])
+    const meta = useMemo(() => result?.meta ?? {
+        pageIndex: filters.pageIndex,
+        perPage: filters.perPage,
+        totalCount: 0
+    }, [result, filters])
 
     if (isError) {
         return (
-            <div className="flex items-center justify-center h-screen">
-                <p className="text-red-500 font-medium">Erro ao carregar pacientes 😕</p>
+            <div className="flex flex-col items-center justify-center h-[400px] gap-4">
+                <p className="text-destructive font-medium">Erro ao carregar pacientes 😕</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="text-sm underline text-muted-foreground hover:text-foreground"
+                >
+                    Tentar novamente
+                </button>
             </div>
         )
     }
@@ -52,30 +62,25 @@ export function PatientsList() {
         <>
             <Helmet title="Cadastro de Pacientes" />
 
-            <div className="flex flex-col gap-4 mt-6">
-                <div className="space-y-5">
-                    {/* Filtros */}
-                    <PatientsTableFilters onPatientRegistered={checkAchievement} />
+            <div className="flex flex-col gap-5 mt-6">
+                <PatientsTableFilters onPatientRegistered={checkAchievement} />
 
-                    <PatientsTable
-                        patients={patients}
-                        isLoading={isLoading}
-                        perPage={filters.perPage}
+                <PatientsTable
+                    patients={patients}
+                    isLoading={isLoading}
+                    perPage={filters.perPage}
+                />
+
+                {meta.totalCount > 0 && (
+                    <Pagination
+                        pageIndex={meta.pageIndex}
+                        totalCount={meta.totalCount}
+                        perPage={meta.perPage}
+                        onPageChange={setPage}
                     />
-
-                    {/* Paginação (Layout original restaurado) */}
-                    {result && meta.totalCount > 0 && (
-                        <Pagination
-                            pageIndex={meta.pageIndex}
-                            totalCount={meta.totalCount}
-                            perPage={meta.perPage}
-                            onPageChange={setPage}
-                        />
-                    )}
-                </div>
+                )}
             </div>
 
-            {/* Toaster de Conquistas */}
             {achievement && (
                 <AchievementToast
                     title={achievement.title}

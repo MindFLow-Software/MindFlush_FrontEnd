@@ -1,11 +1,14 @@
 import { api } from "@/lib/axios"
 
 /**
- * Deleta (Soft Delete) um paciente pelo ID.
- * O ID do psicólogo é obtido automaticamente pelo token JWT.
- * @param patientId - ID do paciente a ser excluído.
+ * @param patientId
+ * @param isActive
  */
-export async function deletePatients(patientId: string) {
-    const response = await api.delete(`/patients/${patientId}`) 
+
+export async function deletePatients(patientId: string, isActive: boolean) {
+    const response = await api.patch(`/patients/${patientId}/status`, { 
+        isActive 
+    }) 
+    
     return response.data
 }

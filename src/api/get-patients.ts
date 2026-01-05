@@ -17,8 +17,10 @@ export interface Patient {
   phoneNumber: string 
   gender: 'MASCULINE' | 'FEMININE' | 'OTHER'
   status: 'Ativo' | 'Inativo' 
+  isActive: boolean 
   createdAt: string
   dateOfBirth: string 
+  profileImageUrl: string | null
 }
 
 export interface GetPatientsResponse {
@@ -36,38 +38,34 @@ export async function getPatients({
   filter,
   status,
 }: GetPatientsFilters): Promise<GetPatientsResponse> {
-  const response = await api.get<any>("/patients", { 
+  
+  const response = await api.get("/patients", { 
     params: {
       pageIndex,
       perPage,
-      filter,
-      status,
+      filter: filter || undefined,
+      status: status === 'all' ? null : status, 
     },
   })
 
   const normalizedPatients: Patient[] = response.data.patients.map((p: any) => {
     const raw = p.props || p 
-    
-    const fName = raw.firstName || ""
-    const lName = raw.lastName || ""
+    const checkIsActive = raw.isActive === true
 
     return {
-      id: p.id || raw.id || p._id || Math.random().toString(36).substr(2, 9), 
-      
-      firstName: fName,
-      lastName: lName,
-      
-      name: (fName || lName) 
-        ? `${fName} ${lName}`.trim() 
-        : (raw.name || raw.patientName || "Paciente sem nome"),
-      
+      id: raw.id || p.id,
+      firstName: raw.firstName || "",
+      lastName: raw.lastName || "",
+      name: `${raw.firstName} ${raw.lastName}`.trim() || "Paciente sem nome",
       cpf: raw.cpf || "",
       email: raw.email || "",
       phoneNumber: raw.phoneNumber || "",
       gender: raw.gender || 'OTHER',
-      status: raw.status || 'Ativo',
-      createdAt: raw.createdAt || new Date().toISOString(),
-      dateOfBirth: raw.dateOfBirth || ""
+      status: checkIsActive ? 'Ativo' : 'Inativo',
+      isActive: checkIsActive,
+      createdAt: raw.createdAt,
+      dateOfBirth: raw.dateOfBirth,
+      profileImageUrl: raw.profileImageUrl || null
     }
   })
 
