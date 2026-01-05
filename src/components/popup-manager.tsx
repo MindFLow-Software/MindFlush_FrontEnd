@@ -1,32 +1,51 @@
-import { useQuery } from '@tanstack/react-query'
-import { fetchActivePopups } from '@/api/popups'
-import { PopupRenderer } from './popup-renderer'
-import { useState } from 'react'
+"use client"
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { fetchUnseenPopups, markPopupAsViewed } from "@/api/popups"
+import { WelcomeModal } from "./popups/welcome-modal"
+import { AchievementToast } from "./popups/achievement-toast"
 
 export function PopupManager() {
-    const [currentPopupIndex, setCurrentPopupIndex] = useState(0)
+    const queryClient = useQueryClient()
 
-    const { data: popups, isLoading } = useQuery({
-        queryKey: ['active-popups'],
-        queryFn: fetchActivePopups,
+    const { data: popups } = useQuery({
+        queryKey: ['unseen-popups'],
+        queryFn: fetchUnseenPopups,
         staleTime: Infinity,
     })
 
-    if (isLoading || !popups || popups.length === 0) {
-        return null
+    // 2. Mutation para marcar como visualizado no banco de dados
+    const { mutate: registerView } = useMutation({
+        mutationFn: ({ id, action }: { id: string; action: string }) =>
+            markPopupAsViewed(id, action),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['unseen-popups'] })
+        }
+    })
+
+    if (!popups || popups.length === 0) return null
+
+    const currentPopup = popups[0]
+
+    const handleClose = (action: string) => {
+        registerView({ id: currentPopup.id, action })
     }
 
-    const currentPopup = popups[currentPopupIndex]
-
-    if (!currentPopup) {
-        return null
+    if (currentPopup.type === 'TOAST') {
+        return (
+            <AchievementToast
+                key={currentPopup.id}
+                popup={currentPopup}
+                onClose={handleClose}
+            />
+        )
     }
 
     return (
-        <PopupRenderer
+        <WelcomeModal
             key={currentPopup.id}
             popup={currentPopup}
-            onClose={() => setCurrentPopupIndex(prev => prev + 1)}
+            onClose={handleClose}
         />
     )
 }

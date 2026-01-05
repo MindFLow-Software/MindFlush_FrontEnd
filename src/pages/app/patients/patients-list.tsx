@@ -7,7 +7,6 @@ import { useQuery } from "@tanstack/react-query"
 import { Pagination } from "@/components/pagination"
 import { PatientsTableFilters } from "./components/patients-table-filters"
 import { PatientsTable } from "./components/patients-table"
-import { AchievementToast } from "@/components/achievement-toast"
 
 import { useHeaderStore } from "@/hooks/use-header-store"
 import { usePatientAchievements } from "@/hooks/use-patient-achievements"
@@ -19,7 +18,8 @@ export function PatientsList() {
 
     const { filters, setPage } = usePatientFilters()
 
-    const { achievement, checkAchievement, clearAchievement } = usePatientAchievements()
+    // O hook agora retorna apenas a função de gatilho
+    const { checkAchievement } = usePatientAchievements()
 
     useEffect(() => {
         setTitle('Cadastro de Pacientes')
@@ -63,6 +63,7 @@ export function PatientsList() {
             <Helmet title="Cadastro de Pacientes" />
 
             <div className="flex flex-col gap-5 mt-6">
+                {/* O checkAchievement apenas invalida a query global de popups */}
                 <PatientsTableFilters onPatientRegistered={checkAchievement} />
 
                 <PatientsTable
@@ -81,14 +82,10 @@ export function PatientsList() {
                 )}
             </div>
 
-            {achievement && (
-                <AchievementToast
-                    title={achievement.title}
-                    description={achievement.description}
-                    variant={achievement.variant}
-                    onClose={clearAchievement}
-                />
-            )}
+            {/* Removida a renderização local do AchievementToast. 
+               O PopupManager (no AppLayout) cuidará disso automaticamente 
+               quando o cache for invalidado pelo checkAchievement.
+            */}
         </>
     )
 }

@@ -2,20 +2,20 @@ import { api } from '@/lib/axios'
 
 export interface Popup {
   id: string
-  title?: string
-  body?: string
+  internalName: string
+  title: string | null
+  body: string | null
+  type: 'MODAL' | 'TOAST' | 'SLIDE_IN'
   imageUrl?: string
   ctaText?: string
   ctaUrl?: string
-  type: 'MODAL' | 'SLIDE_IN' | 'BAR' | 'TOAST'
-  styleConfig?: any
 }
 
-export async function fetchActivePopups() {
-  const response = await api.get<{ popups: Popup[] }>('/popups/active')
+export async function fetchUnseenPopups() {
+  const response = await api.get<{ popups: Popup[] }>('/popups/unseen')
   return response.data.popups
 }
 
-export async function markPopupAsViewed(popupId: string, action?: string) {
+export async function markPopupAsViewed(popupId: string, action: string) {
   await api.post(`/popups/${popupId}/view`, { action })
 }

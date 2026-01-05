@@ -100,7 +100,7 @@ export function PatientsTableFilters({ onPatientRegistered }: PatientsTableFilte
       <div className="flex items-center">
         <Button
           size="sm"
-          className="gap-2 w-full lg:w-auto shrink-0 bg-blue-600 hover:bg-blue-700 shadow-sm transition-all"
+          className="cursor-pointer gap-2 w-full lg:w-auto shrink-0 bg-blue-600 hover:bg-blue-700 shadow-sm transition-all"
           onClick={() => setIsRegisterOpen(true)}
         >
           <UserRoundPlus className="h-4 w-4" />

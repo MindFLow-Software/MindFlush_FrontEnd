@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useCallback, memo } from "react"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { CloudDownload, Paperclip, FileText, X, Loader2, CalendarIcon } from "lucide-react"
@@ -25,13 +25,10 @@ import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyMedia, EmptyCont
 import { formatCPF } from "@/utils/formatCPF"
 import { formatPhone } from "@/utils/formatPhone"
 import { registerPatients, type RegisterPatientsBody } from "@/api/create-patients"
-import { getAmountPatientsCard } from "@/api/get-amount-patients-card"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Camera, Upload, Eye, EyeOff, Venus, Mars, Users } from "lucide-react"
 import { Label } from "@/components/ui/label"
-
-import { AchievementToast, type AchievementVariant } from "@/components/achievement-toast"
 
 interface FormErrors {
     firstName?: boolean
@@ -150,13 +147,6 @@ const DocumentUploadSection = memo(({ selectedFiles, onFilesChange }: DocumentUp
 })
 DocumentUploadSection.displayName = "DocumentUploadSection"
 
-
-interface ActiveAchievement {
-    title: string
-    description: string
-    variant: AchievementVariant
-}
-
 interface RegisterPatientsProps {
     onSuccess?: () => void
 }
@@ -178,53 +168,17 @@ export function RegisterPatients({ onSuccess }: RegisterPatientsProps) {
     const [selectedFiles, setSelectedFiles] = useState<File[]>([])
     const [errors, setErrors] = useState<FormErrors>({})
 
-    // 🏆 Estado para controlar a exibição da Conquista
-    const [achievement, setAchievement] = useState<ActiveAchievement | null>(null)
-
-    // 1. Busca a contagem ATUAL de pacientes
-    const { data: metrics } = useQuery({
-        queryKey: ['metrics', 'amount-patients-card'],
-        queryFn: getAmountPatientsCard,
-        staleTime: 1000 * 60 * 5,
-    })
-
     const { mutateAsync: registerPatientFn, isPending } = useMutation({
         mutationFn: registerPatients,
         onSuccess: () => {
-            const previousTotal = metrics?.total ?? 0;
-            const newTotal = previousTotal + 1;
+            // 🚀 GATILHO: Invalida a query global de popups para o PopupManager buscar a conquista gerada no backend
+            queryClient.invalidateQueries({ queryKey: ['unseen-popups'] })
 
-            // 2. 🏆 Lógica de Conquistas Atualizada
-            if (newTotal === 1) {
-                setAchievement({
-                    title: "Primeiro Passo! 🚀",
-                    description: "Parabéns! Você cadastrou seu primeiro paciente.",
-                    variant: 'bronze'
-                })
-            } else if (newTotal === 5) { // Ajustado para 5 (Silver)
-                setAchievement({
-                    title: "Em Expansão! ⚡",
-                    description: "Sua clínica está crescendo! 5 pacientes cadastrados.",
-                    variant: 'silver'
-                })
-            } else if (newTotal === 10) { // Ajustado para 10 (Gold)
-                setAchievement({
-                    title: "Autoridade! 👑",
-                    description: "Incrível! Você já possui 10 pacientes em sua base.",
-                    variant: 'gold'
-                })
-            } else if (newTotal === 30) { // Ajustado para 30 (Platinum)
-                setAchievement({
-                    title: "Agenda Lotada! 💎",
-                    description: "Excelente trabalho! 30 pacientes cadastrados.",
-                    variant: 'platinum'
-                })
-            } else {
-                toast.success("Paciente cadastrado com sucesso!")
-            }
-
+            // Invalida dados da lista e métricas
             queryClient.invalidateQueries({ queryKey: ["patients"] })
             queryClient.invalidateQueries({ queryKey: ["metrics"] })
+
+            toast.success("Paciente cadastrado com sucesso!")
 
             if (onSuccess) onSuccess()
         },
@@ -266,7 +220,6 @@ export function RegisterPatients({ onSuccess }: RegisterPatientsProps) {
 
         const newErrors: FormErrors = {}
 
-        // Validação Manual
         if (!firstName) newErrors.firstName = true
         if (!lastName) newErrors.lastName = true
         if (!email) newErrors.email = true
@@ -312,211 +265,162 @@ export function RegisterPatients({ onSuccess }: RegisterPatientsProps) {
     }
 
     return (
-        <>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto sm:rounded-xl">
-                <DialogHeader>
-                    <DialogTitle>Novo Prontuário</DialogTitle>
-                    <DialogDescription>
-                        Cadastre as informações básicas do paciente para iniciar o acompanhamento.
-                    </DialogDescription>
-                </DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto sm:rounded-xl">
+            <DialogHeader>
+                <DialogTitle>Novo Prontuário</DialogTitle>
+                <DialogDescription>
+                    Cadastre as informações básicas do paciente para iniciar o acompanhamento.
+                </DialogDescription>
+            </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="grid gap-6 py-4">
+            <form onSubmit={handleSubmit} className="grid gap-6 py-4">
 
-                    {/* 1. SEÇÃO DE AVATAR */}
-                    <div className="flex flex-col items-center justify-center gap-2">
-                        <div
-                            className="relative group cursor-pointer"
-                            onClick={() => fileInputRef.current?.click()}
-                        >
-                            <Avatar className="h-24 w-24 border-2 border-dashed border-muted-foreground/30 group-hover:border-primary transition-colors">
-                                <AvatarImage src={previewImage || ""} className="object-cover" />
-                                <AvatarFallback className="bg-muted">
-                                    <Camera className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
-                                </AvatarFallback>
-                            </Avatar>
-
-                            {/* Botãozinho flutuante de editar */}
-                            <div className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-1.5 shadow-md group-hover:scale-110 transition-transform">
-                                <Upload className="h-3 w-3" />
-                            </div>
-                        </div>
-                        <span className="text-xs text-muted-foreground">Clique para adicionar foto</span>
-
-                        {/* Input invisível para Foto */}
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            className="hidden"
-                            accept="image/*"
-                            onChange={handleFileChange}
-                        />
-                    </div>
-
-                    <div className="border-t my-2" />
-
-                    {/* 2. DADOS PESSOAIS */}
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                            Dados Pessoais
-                        </h3>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="firstName" className={cn(errors.firstName && "text-red-500")}>Nome *</Label>
-                                <Input
-                                    id="firstName" name="firstName" placeholder="Ex: Ana"
-                                    className={cn(errors.firstName && "border-red-500 focus-visible:ring-red-500")}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="lastName" className={cn(errors.lastName && "text-red-500")}>Sobrenome *</Label>
-                                <Input
-                                    id="lastName" name="lastName" placeholder="Ex: Silva"
-                                    className={cn(errors.lastName && "border-red-500 focus-visible:ring-red-500")}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="cpf" className={cn(errors.cpf && "text-red-500")}>CPF *</Label>
-                                <Input
-                                    id="cpf" name="cpf" placeholder="000.000.000-00" maxLength={14}
-                                    value={cpf} onChange={(e) => setCpf(formatCPF(e.target.value))}
-                                    className={cn(errors.cpf && "border-red-500 focus-visible:ring-red-500")}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label className={cn(errors.dateOfBirth && "text-red-500")}>Data de Nascimento *</Label>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant={"outline"}
-                                            className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                !date && "text-muted-foreground",
-                                                errors.dateOfBirth && "border-red-500 text-red-500"
-                                            )}
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {date ? format(date, "dd 'de' MMMM, yyyy", { locale: ptBR }) : <span>Selecione</span>}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="p-0 w-auto overflow-hidden" align="start">
-                                        <Calendar
-                                            mode="single"
-                                            captionLayout="dropdown"
-                                            selected={date}
-                                            onSelect={setDate}
-                                            fromYear={1900}
-                                            toYear={new Date().getFullYear()}
-                                            locale={ptBR}
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
+                <div className="flex flex-col items-center justify-center gap-2">
+                    <div
+                        className="relative group cursor-pointer"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        <Avatar className="h-24 w-24 border-2 border-dashed border-muted-foreground/30 group-hover:border-primary transition-colors">
+                            <AvatarImage src={previewImage || ""} className="object-cover" />
+                            <AvatarFallback className="bg-muted">
+                                <Camera className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-1.5 shadow-md group-hover:scale-110 transition-transform">
+                            <Upload className="h-3 w-3" />
                         </div>
                     </div>
-
-                    {/* 3. CONTATO E ACESSO */}
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 pt-2 border-t">
-                            Contato e Acesso
-                        </h3>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="phoneNumber" className={cn(errors.phoneNumber && "text-red-500")}>Celular / WhatsApp *</Label>
-                                <Input
-                                    id="phoneNumber" name="phoneNumber" placeholder="(00) 00000-0000" maxLength={15}
-                                    value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))}
-                                    className={cn(errors.phoneNumber && "border-red-500 focus-visible:ring-red-500")}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label>Gênero</Label>
-                                <Select value={gender} onValueChange={setGender}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Selecione" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="FEMININE">
-                                            <div className="flex items-center gap-2"><Venus className="h-4 w-4 text-rose-500" /> Feminino</div>
-                                        </SelectItem>
-                                        <SelectItem value="MASCULINE">
-                                            <div className="flex items-center gap-2"><Mars className="h-4 w-4 text-blue-500" /> Masculino</div>
-                                        </SelectItem>
-                                        <SelectItem value="OTHER">
-                                            <div className="flex items-center gap-2"><Users className="h-4 w-4 text-violet-500" /> Outro</div>
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-2 sm:col-span-2">
-                                <Label htmlFor="email" className={cn(errors.email && "text-red-500")}>Email *</Label>
-                                <Input
-                                    id="email" name="email" type="email" placeholder="email@exemplo.com"
-                                    className={cn(errors.email && "border-red-500 focus-visible:ring-red-500")}
-                                />
-                            </div>
-
-                            <div className="space-y-2 sm:col-span-2">
-                                <Label htmlFor="password" className={cn(errors.password && "text-red-500")}>Senha de Acesso *</Label>
-                                <div className="relative">
-                                    <Input
-                                        id="password"
-                                        name="password"
-                                        type={showPassword ? "text" : "password"}
-                                        placeholder="Mínimo 6 caracteres"
-                                        className={cn("pr-10", errors.password && "border-red-500 focus-visible:ring-red-500")}
-                                    />
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                    >
-                                        {showPassword ? (
-                                            <EyeOff className="h-4 w-4 text-muted-foreground" />
-                                        ) : (
-                                            <Eye className="h-4 w-4 text-muted-foreground" />
-                                        )}
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 4. DOCUMENTOS (Componente Isolado) */}
-                    <DocumentUploadSection
-                        selectedFiles={selectedFiles}
-                        onFilesChange={handleFilesChange}
+                    <span className="text-xs text-muted-foreground">Clique para adicionar foto</span>
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleFileChange}
                     />
+                </div>
 
-                    <FieldSeparator />
+                <div className="border-t my-2" />
 
-                    <div className="flex justify-end pt-2">
-                        <Button type="submit" disabled={isPending} className="w-full sm:w-auto min-w-[150px]">
-                            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {isPending ? "Salvando..." : "Cadastrar Paciente"}
-                        </Button>
+                <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        Dados Pessoais
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="firstName" className={cn(errors.firstName && "text-red-500")}>Nome *</Label>
+                            <Input
+                                id="firstName" name="firstName" placeholder="Ex: Ana"
+                                className={cn(errors.firstName && "border-red-500 focus-visible:ring-red-500")}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="lastName" className={cn(errors.lastName && "text-red-500")}>Sobrenome *</Label>
+                            <Input
+                                id="lastName" name="lastName" placeholder="Ex: Silva"
+                                className={cn(errors.lastName && "border-red-500 focus-visible:ring-red-500")}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="cpf" className={cn(errors.cpf && "text-red-500")}>CPF *</Label>
+                            <Input
+                                id="cpf" name="cpf" placeholder="000.000.000-00" maxLength={14}
+                                value={cpf} onChange={(e) => setCpf(formatCPF(e.target.value))}
+                                className={cn(errors.cpf && "border-red-500 focus-visible:ring-red-500")}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className={cn(errors.dateOfBirth && "text-red-500")}>Data de Nascimento *</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant={"outline"}
+                                        className={cn(
+                                            "w-full justify-start text-left font-normal",
+                                            !date && "text-muted-foreground",
+                                            errors.dateOfBirth && "border-red-500 text-red-500"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {date ? format(date, "dd 'de' MMMM, yyyy", { locale: ptBR }) : <span>Selecione</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="p-0 w-auto overflow-hidden" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        captionLayout="dropdown"
+                                        selected={date}
+                                        onSelect={setDate}
+                                        fromYear={1900}
+                                        toYear={new Date().getFullYear()}
+                                        locale={ptBR}
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
                     </div>
+                </div>
 
-                </form>
-            </DialogContent>
+                <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 pt-2 border-t">
+                        Contato e Acesso
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="phoneNumber" className={cn(errors.phoneNumber && "text-red-500")}>Celular / WhatsApp *</Label>
+                            <Input
+                                id="phoneNumber" name="phoneNumber" placeholder="(00) 00000-0000" maxLength={15}
+                                value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))}
+                                className={cn(errors.phoneNumber && "border-red-500 focus-visible:ring-red-500")}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Gênero</Label>
+                            <Select value={gender} onValueChange={setGender}>
+                                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="FEMININE"><div className="flex items-center gap-2"><Venus className="h-4 w-4 text-rose-500" /> Feminino</div></SelectItem>
+                                    <SelectItem value="MASCULINE"><div className="flex items-center gap-2"><Mars className="h-4 w-4 text-blue-500" /> Masculino</div></SelectItem>
+                                    <SelectItem value="OTHER"><div className="flex items-center gap-2"><Users className="h-4 w-4 text-violet-500" /> Outro</div></SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="email" className={cn(errors.email && "text-red-500")}>Email *</Label>
+                            <Input id="email" name="email" type="email" placeholder="email@exemplo.com" className={cn(errors.email && "border-red-500 focus-visible:ring-red-500")} />
+                        </div>
+                        <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor="password" className={cn(errors.password && "text-red-500")}>Senha de Acesso *</Label>
+                            <div className="relative">
+                                <Input
+                                    id="password" name="password"
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Mínimo 6 caracteres"
+                                    className={cn("pr-10", errors.password && "border-red-500 focus-visible:ring-red-500")}
+                                />
+                                <Button
+                                    type="button" variant="ghost" size="sm"
+                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                >
+                                    {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-            {achievement && (
-                <AchievementToast
-                    title={achievement.title}
-                    description={achievement.description}
-                    variant={achievement.variant}
-                    onClose={() => setAchievement(null)}
-                />
-            )}
-        </>
+                <DocumentUploadSection selectedFiles={selectedFiles} onFilesChange={handleFilesChange} />
+
+                <FieldSeparator />
+
+                <div className="flex justify-end pt-2">
+                    <Button type="submit" disabled={isPending} className="cursor-pointer gap-2 w-full lg:w-auto shrink-0 bg-blue-600 hover:bg-blue-700 shadow-sm transition-all">
+                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isPending ? "Salvando..." : "Cadastrar Paciente"}
+                    </Button>
+                </div>
+            </form>
+        </DialogContent>
     )
 }
