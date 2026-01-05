@@ -40,13 +40,16 @@ export function PatientsTableFilters({ onPatientRegistered }: PatientsTableFilte
       isFirstRender.current = false
       return
     }
+    if (watchedFilter === filters.filter) {
+      return
+    }
 
     const timeout = setTimeout(() => {
       setFilters({ filter: watchedFilter })
     }, 400)
 
     return () => clearTimeout(timeout)
-  }, [watchedFilter, setFilters])
+  }, [watchedFilter, filters.filter, setFilters])
 
   function handleClearFilters() {
     clearFilters()
@@ -57,7 +60,6 @@ export function PatientsTableFilters({ onPatientRegistered }: PatientsTableFilte
     <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
       <div className="flex flex-col lg:flex-row gap-2 flex-1 lg:items-center">
 
-        {/* Input de Busca */}
         <div className="relative w-full lg:w-auto">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
@@ -67,7 +69,6 @@ export function PatientsTableFilters({ onPatientRegistered }: PatientsTableFilte
           />
         </div>
 
-        {/* Select Shadcn - Controlado diretamente pelo Hook de Filtros */}
         <Select
           value={filters.status}
           onValueChange={(value) => setFilters({ status: value })}
@@ -82,7 +83,6 @@ export function PatientsTableFilters({ onPatientRegistered }: PatientsTableFilte
           </SelectContent>
         </Select>
 
-        {/* Limpar Filtros */}
         {(filters.filter || filters.status !== "all") && (
           <Button
             variant="ghost"
@@ -97,7 +97,6 @@ export function PatientsTableFilters({ onPatientRegistered }: PatientsTableFilte
         )}
       </div>
 
-      {/* Cadastro de Paciente */}
       <div className="flex items-center">
         <Button
           size="sm"
