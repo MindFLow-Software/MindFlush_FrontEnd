@@ -18,7 +18,6 @@ export function PatientsList() {
 
     const { filters, setPage } = usePatientFilters()
 
-    // O hook agora retorna apenas a função de gatilho
     const { checkAchievement } = usePatientAchievements()
 
     useEffect(() => {

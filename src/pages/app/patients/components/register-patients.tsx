@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, memo } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { CloudDownload, Paperclip, FileText, X, Loader2, CalendarIcon, Camera, Upload, Eye, EyeOff, Venus, Mars, Users } from "lucide-react"
+import { CloudUpload, Paperclip, FileText, X, Loader2, CalendarIcon, Camera, Upload, Eye, EyeOff, Venus, Mars, Users } from "lucide-react"
 import { toast } from "sonner"
 import { AxiosError } from "axios"
 
@@ -97,7 +97,7 @@ const DocumentUploadSection = memo(({ selectedFiles, onFilesChange }: DocumentUp
                     <Empty className="border border-dashed py-6 mt-1 hover:bg-muted/30 transition-colors cursor-pointer" onClick={triggerFileInput}>
                         <EmptyHeader>
                             <EmptyMedia variant="icon">
-                                <CloudDownload className="h-8 w-8 text-muted-foreground/60" />
+                                <CloudUpload className="h-8 w-8 text-muted-foreground/60" />
                             </EmptyMedia>
                             <EmptyTitle className="text-base">Sem Documentos</EmptyTitle>
                             <EmptyTitle className="text-base font-normal text-muted-foreground">Arraste ou clique para selecionar</EmptyTitle>
