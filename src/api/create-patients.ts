@@ -1,5 +1,5 @@
 import { api } from "@/lib/axios"
-import { format } from "date-fns" // Importe o format
+import { format } from "date-fns"
 import type { Expertise, PatientRole } from "@/types/expertise"
 import type { Gender } from "@/types/enum-gender"
 
@@ -7,7 +7,7 @@ export interface RegisterPatientsBody {
     firstName: string
     lastName: string
     email?: string
-    password: string
+    password?: string
     phoneNumber: string
     profileImageUrl?: string
     dateOfBirth: Date | string
@@ -16,6 +16,7 @@ export interface RegisterPatientsBody {
     gender: Gender
     expertise: Expertise
     isActive?: boolean
+    attachmentIds?: string[]
 }
 
 export async function registerPatients(data: RegisterPatientsBody) {
@@ -27,7 +28,6 @@ export async function registerPatients(data: RegisterPatientsBody) {
         ...data,
         cpf: rawCpf, 
         phoneNumber: rawPhoneNumber, 
-        
         dateOfBirth:
             data.dateOfBirth instanceof Date
                 ? format(data.dateOfBirth, "yyyy-MM-dd")

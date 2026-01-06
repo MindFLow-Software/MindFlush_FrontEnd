@@ -81,11 +81,6 @@ export function PatientsList() {
                     />
                 )}
             </div>
-
-            {/* Removida a renderização local do AchievementToast. 
-               O PopupManager (no AppLayout) cuidará disso automaticamente 
-               quando o cache for invalidado pelo checkAchievement.
-            */}
         </>
     )
 }
