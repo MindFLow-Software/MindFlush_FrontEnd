@@ -13,6 +13,7 @@ import { PatientsByGenderChart } from "./components/patients-by-gender-chart"
 import { NewPatientsBarChart } from "./components/patients-amount-bar-chart"
 import { DateRangePicker } from "./components/date-range-picker"
 import { SessionsBarChart } from './components/sessions-chart'
+import { TotalWorkHoursCard } from './components/total-work-hours-card'
 
 interface DateRange {
     from: Date | undefined
@@ -51,10 +52,11 @@ export function Dashboard() {
                     />
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <PatientsCountCard startDate={startDate} endDate={endDate} />
                     <PatientsAmountCard />
                     <MonthPatientsAmountCard startDate={startDate} endDate={endDate} />
+                    <TotalWorkHoursCard startDate={startDate} endDate={endDate}/>
                 </div>
             </div>
 

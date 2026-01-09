@@ -1,6 +1,6 @@
 "use client"
 
-import { TrendingUp, TrendingDown, Users, AlertCircle, Info } from "lucide-react"
+import { TrendingUp, TrendingDown, Users, AlertCircle } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { subDays } from "date-fns"
 import { useMemo } from "react"
@@ -39,8 +39,6 @@ export const PatientsCountCard = ({ startDate: propStartDate, endDate: propEndDa
         }
 
         const total = chartData.reduce((sum, item) => sum + item.newPatients, 0)
-
-        // Mock de lógica de diferença (substituir pela lógica real se disponível)
         const diff = 0.15
         const formatted = Math.abs(diff * 100)
         const isPositive = diff >= 0
@@ -51,8 +49,8 @@ export const PatientsCountCard = ({ startDate: propStartDate, endDate: propEndDa
             diffSign: isPositive ? "+" : "-",
             TrendIcon: isPositive ? TrendingUp : TrendingDown,
             diffStyle: isPositive
-                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-400"
-                : "bg-red-500/10 text-red-600 border-red-500/20 dark:bg-red-500/20 dark:text-red-400",
+                ? "bg-[#10b981]/10 text-[#059669] border-[#10b981]/20 dark:bg-[#10b981]/20 dark:text-[#34d399]"
+                : "bg-[#ef4444]/10 text-[#dc2626] border-[#ef4444]/20 dark:bg-[#ef4444]/20 dark:text-[#f87171]",
         }
     }, [chartData])
 
@@ -62,28 +60,34 @@ export const PatientsCountCard = ({ startDate: propStartDate, endDate: propEndDa
                 "relative overflow-hidden",
                 "rounded-xl border bg-card shadow-sm",
                 "p-6 transition-all duration-300 hover:shadow-md",
-                "border-l-4 border-l-emerald-500"
+                "border-l-4 border-l-[#01DE82]"
             )}
         >
             <img
                 src="/brain.png"
                 alt="Mascote cérebro"
                 className={cn(
-                    "absolute -bottom-10 -right-10",
+                    "absolute -bottom-10 -right-13",
                     "w-48 h-auto opacity-[2] dark:opacity-[0.55]",
                     "pointer-events-none select-none rotate-12"
                 )}
             />
 
-            <div className="relative z-10 flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className="rounded-lg bg-emerald-500/10 p-2 border border-emerald-500/20">
-                            <Users className="size-4 text-emerald-600" />
+            <div className="relative z-10 flex flex-col gap-5">
+                <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3">
+                        <div className="rounded-lg bg-[#01DE82]/10 p-2 border border-[#01DE82]/20">
+                            <Users className="size-4 text-[#01DE82]" />
                         </div>
-                        <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                            Pacientes
-                        </span>
+
+                        <div className="flex flex-col">
+                            <span className="text-sm font-semibold text-foreground uppercase tracking-wider">
+                                Pacientes
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                                Novos pacientes no período
+                            </span>
+                        </div>
                     </div>
 
                     {!isLoading && !isError && totalPatients > 0 && (
@@ -96,35 +100,20 @@ export const PatientsCountCard = ({ startDate: propStartDate, endDate: propEndDa
 
                 {isLoading ? (
                     <div className="space-y-2">
-                        <Skeleton className="h-10 w-24" />
-                        <Skeleton className="h-4 w-40" />
+                        <Skeleton className="h-10 w-28" />
+                        <Skeleton className="h-4 w-48" />
                     </div>
                 ) : isError ? (
-                    <div className="flex items-center gap-2 text-red-500">
+                    <div className="flex items-center gap-2 text-red-500 py-2">
                         <AlertCircle className="size-4" />
-                        <span className="text-sm font-medium">Erro nos dados</span>
+                        <span className="text-sm font-medium">Erro ao carregar dados</span>
                     </div>
                 ) : (
                     <div className="flex flex-col">
                         <div className="flex items-baseline gap-2">
-                            <span className="text-4xl font-bold tracking-tighter text-foreground tabular-nums">
+                            <span className="text-4xl font-bold tracking-tight tabular-nums text-foreground">
                                 {totalPatients.toLocaleString("pt-BR")}
                             </span>
-                        </div>
-
-                        <div className="flex flex-col mt-1">
-                            <p className="text-sm font-medium text-foreground/80">
-                                Novos pacientes registrados
-                            </p>
-
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                                <Info className="size-3 text-muted-foreground/60" />
-                                <p className="text-[11px] text-muted-foreground font-medium">
-                                    {totalPatients === 0
-                                        ? "Nenhuma atividade no período"
-                                        : "Dados baseados nos últimos 30 dias"}
-                                </p>
-                            </div>
                         </div>
                     </div>
                 )}

@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
-import { Goal, TrendingUp, TrendingDown, AlertCircle, RefreshCcw, Info } from "lucide-react"
+import { Goal, TrendingUp, TrendingDown, AlertCircle, RefreshCcw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useQuery } from "@tanstack/react-query"
 import { getMonthlySessionsCount } from "@/api/get-monthly-sessions-count"
@@ -41,8 +41,8 @@ export function MonthPatientsAmountCard({ startDate, endDate }: MonthPatientsAmo
             label: isPositive ? "+" : "-",
             icon: isPositive ? TrendingUp : TrendingDown,
             style: isPositive
-                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-400"
-                : "bg-red-500/10 text-red-600 border-red-500/20 dark:bg-red-500/20 dark:text-red-400"
+                ? "bg-[#10b981]/10 text-[#059669] border-[#10b981]/20 dark:bg-[#10b981]/20 dark:text-[#34d399]"
+                : "bg-[#ef4444]/10 text-[#dc2626] border-[#ef4444]/20 dark:bg-[#ef4444]/20 dark:text-[#f87171]"
         }
     }, [total])
 
@@ -52,29 +52,34 @@ export function MonthPatientsAmountCard({ startDate, endDate }: MonthPatientsAmo
                 "relative overflow-hidden",
                 "rounded-xl border bg-card shadow-sm",
                 "p-6 transition-all duration-300 hover:shadow-md",
-                "border-l-4 border-l-purple-500 dark:border-l-purple-600"
+                "border-l-4 border-l-[#5a189a]"
             )}
         >
-            {/* Marca d'água sutil adaptada para Dark Mode */}
             <img
                 src="/goal.svg"
                 alt="Mascote"
                 className={cn(
-                    "absolute -bottom-9 -right-3",
+                    "absolute -bottom-7 -right-10",
                     "w-32 h-auto opacity-[2] dark:opacity-[0.55]",
-                    "pointer-events-none select-none rotate-12 dark:brightness-150",
+                    "pointer-events-none select-none"
                 )}
             />
 
-            <div className="relative z-10 flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className="rounded-lg bg-purple-500/10 dark:bg-purple-500/20 p-2 border border-purple-500/20 dark:border-purple-500/30">
-                            <Goal className="size-4 text-purple-700 dark:text-purple-400" />
+            <div className="relative z-10 flex flex-col gap-5">
+                <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3">
+                        <div className="rounded-lg bg-[#5a189a]/10 p-2 border border-[#5a189a]/20">
+                            <Goal className="size-4 text-[#5a189a]" />
                         </div>
-                        <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                            Sessões do Mês
-                        </span>
+
+                        <div className="flex flex-col">
+                            <span className="text-sm font-semibold text-foreground uppercase tracking-wider">
+                                Sessões do Mês
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                                Volume total de atendimentos
+                            </span>
+                        </div>
                     </div>
 
                     {!isLoading && !isError && trend && (
@@ -87,8 +92,8 @@ export function MonthPatientsAmountCard({ startDate, endDate }: MonthPatientsAmo
 
                 {isLoading ? (
                     <div className="space-y-2">
-                        <Skeleton className="h-10 w-24" />
-                        <Skeleton className="h-4 w-40" />
+                        <Skeleton className="h-10 w-28" />
+                        <Skeleton className="h-4 w-48" />
                     </div>
                 ) : isError ? (
                     <div className="flex flex-col items-start gap-2 py-1">
@@ -96,7 +101,7 @@ export function MonthPatientsAmountCard({ startDate, endDate }: MonthPatientsAmo
                             <AlertCircle className="size-4" />
                             <span className="text-sm font-medium">Erro ao carregar</span>
                         </div>
-                        <button onClick={() => refetch()} className="group flex items-center gap-1.5 text-xs text-purple-600 dark:text-purple-400 font-semibold hover:underline">
+                        <button onClick={() => refetch()} className="group flex items-center gap-1.5 text-xs text-[#5a189a] font-semibold hover:underline">
                             <RefreshCcw className="size-3 transition-transform group-hover:rotate-180 duration-500" />
                             Tentar novamente
                         </button>
@@ -104,22 +109,9 @@ export function MonthPatientsAmountCard({ startDate, endDate }: MonthPatientsAmo
                 ) : (
                     <div className="flex flex-col">
                         <div className="flex items-baseline gap-2">
-                            <span className="text-4xl font-bold tracking-tighter text-foreground tabular-nums">
+                            <span className="text-4xl font-bold tracking-tight tabular-nums text-foreground">
                                 {total?.toLocaleString("pt-BR") ?? "0"}
                             </span>
-                        </div>
-
-                        <div className="flex flex-col mt-1">
-                            <p className="text-sm font-medium text-foreground/80 dark:text-foreground/70">
-                                Total de atendimentos
-                            </p>
-
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                                <Info className="size-3 text-muted-foreground/60" />
-                                <p className="text-[11px] text-muted-foreground font-medium">
-                                    Dados baseados nos últimos 30 dias
-                                </p>
-                            </div>
                         </div>
                     </div>
                 )}
