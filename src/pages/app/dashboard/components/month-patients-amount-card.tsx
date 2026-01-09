@@ -1,11 +1,9 @@
 "use client"
 
-import { useMemo } from "react"
-import { Goal, TrendingUp, TrendingDown, AlertCircle, RefreshCcw } from "lucide-react"
+import { Goal, AlertCircle, RefreshCcw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useQuery } from "@tanstack/react-query"
 import { getMonthlySessionsCount } from "@/api/get-monthly-sessions-count"
-import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card } from "@/components/ui/card"
 
@@ -29,22 +27,6 @@ export function MonthPatientsAmountCard({ startDate, endDate }: MonthPatientsAmo
     })
 
     const total = data?.count ?? null
-
-    const trend = useMemo(() => {
-        if (total === null) return null
-        const diff = 0.12 // Simulação de backend
-        const isPositive = diff >= 0
-
-        return {
-            value: Math.abs(diff * 100).toFixed(1),
-            isPositive,
-            label: isPositive ? "+" : "-",
-            icon: isPositive ? TrendingUp : TrendingDown,
-            style: isPositive
-                ? "bg-[#10b981]/10 text-[#059669] border-[#10b981]/20 dark:bg-[#10b981]/20 dark:text-[#34d399]"
-                : "bg-[#ef4444]/10 text-[#dc2626] border-[#ef4444]/20 dark:bg-[#ef4444]/20 dark:text-[#f87171]"
-        }
-    }, [total])
 
     return (
         <Card
@@ -77,17 +59,10 @@ export function MonthPatientsAmountCard({ startDate, endDate }: MonthPatientsAmo
                                 Sessões do Mês
                             </span>
                             <span className="text-xs text-muted-foreground">
-                                Volume total de atendimentos
+                                Total de atendimentos
                             </span>
                         </div>
                     </div>
-
-                    {!isLoading && !isError && trend && (
-                        <Badge variant="outline" className={cn("h-6 px-2 text-[11px] font-bold gap-1 transition-all", trend.style)}>
-                            <trend.icon className="size-3" />
-                            {trend.label}{trend.value}%
-                        </Badge>
-                    )}
                 </div>
 
                 {isLoading ? (

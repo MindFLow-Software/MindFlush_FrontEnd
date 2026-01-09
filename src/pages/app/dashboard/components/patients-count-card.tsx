@@ -6,7 +6,6 @@ import { subDays } from "date-fns"
 import { useMemo } from "react"
 import { getAmountPatientsChart } from "@/api/get-amount-patients-chart"
 import { cn } from "@/lib/utils"
-import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface PatientsCountCardProps {
@@ -27,7 +26,7 @@ export const PatientsCountCard = ({ startDate: propStartDate, endDate: propEndDa
         queryFn: () => getAmountPatientsChart({ startDate, endDate }),
     })
 
-    const { totalPatients, formattedDiff, diffSign, diffStyle, TrendIcon } = useMemo(() => {
+    const { totalPatients } = useMemo(() => {
         if (!chartData?.length) {
             return {
                 totalPatients: 0,
@@ -89,13 +88,6 @@ export const PatientsCountCard = ({ startDate: propStartDate, endDate: propEndDa
                             </span>
                         </div>
                     </div>
-
-                    {!isLoading && !isError && totalPatients > 0 && (
-                        <Badge variant="outline" className={cn("h-6 px-2 text-[11px] font-bold gap-1 transition-colors", diffStyle)}>
-                            <TrendIcon className="size-3" />
-                            {diffSign}{formattedDiff.toFixed(1)}%
-                        </Badge>
-                    )}
                 </div>
 
                 {isLoading ? (
