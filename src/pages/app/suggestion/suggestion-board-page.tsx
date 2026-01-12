@@ -1,90 +1,111 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Helmet } from "react-helmet-async"
-import { LayoutGrid, Lightbulb, Rocket, Microscope, PartyPopper } from "lucide-react"
+import {
+    LayoutGrid,
+    Lightbulb,
+    Rocket,
+    Microscope,
+    PartyPopper,
+    Search,
+    XCircle
+} from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 
 import { useHeaderStore } from "@/hooks/use-header-store"
 import { getSuggestions } from "@/api/get-suggestions"
 import { SuggestionColumn } from "./components/suggestion-column"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Dialog } from "@/components/ui/dialog"
 
 const BRAND_COLOR = "#27187E"
 
+function useDebounce<T>(value: T, delay: number): T {
+    const [debouncedValue, setDebouncedValue] = useState<T>(value)
+    useEffect(() => {
+        const handler = setTimeout(() => setDebouncedValue(value), delay)
+        return () => clearTimeout(handler)
+    }, [value, delay])
+    return debouncedValue
+}
+
 const COLUMN_CONFIG = [
-    {
-        title: "Sugestões",
-        icon: Lightbulb,
-        status: "PENDING",
-        color: "bg-slate-50",
-        dotColor: "bg-slate-500",
-        iconColor: "text-slate-600",
-    },
-    {
-        title: "Próximos Passos",
-        icon: Rocket,
-        status: "UNDER_REVIEW",
-        color: "bg-emerald-50",
-        dotColor: "bg-emerald-500",
-        iconColor: "text-emerald-600",
-    },
-    {
-        title: "Estudando",
-        icon: Microscope,
-        status: "REJECTED",
-        color: "bg-blue-50",
-        dotColor: "bg-blue-500",
-        iconColor: "text-blue-600",
-    },
-    {
-        title: "Tudo Pronto!",
-        icon: PartyPopper,
-        status: "IMPLEMENTED",
-        color: "bg-yellow-50",
-        dotColor: "bg-yellow-500",
-        iconColor: "text-yellow-600",
-    },
+    { title: "Sugestões", icon: Lightbulb, status: "PENDING", color: "bg-slate-50", dotColor: "bg-slate-500", iconColor: "text-slate-600" },
+    { title: "Próximos Passos", icon: Rocket, status: "UNDER_REVIEW", color: "bg-emerald-50", dotColor: "bg-emerald-500", iconColor: "text-emerald-600" },
+    { title: "Estudando", icon: Microscope, status: "REJECTED", color: "bg-blue-50", dotColor: "bg-blue-500", iconColor: "text-blue-600" },
+    { title: "Tudo Pronto!", icon: PartyPopper, status: "IMPLEMENTED", color: "bg-yellow-50", dotColor: "bg-yellow-500", iconColor: "text-yellow-600" },
 ] as const
 
 export function SuggestionBoardPage() {
     const { setTitle } = useHeaderStore()
+    const [search, setSearch] = useState("")
+    const [isCreateOpen, setIsCreateOpen] = useState(false)
+    const debouncedSearch = useDebounce(search, 400)
 
     useEffect(() => {
         setTitle("Envios da Comunidade")
     }, [setTitle])
 
     const { data: suggestions, isLoading } = useQuery({
-        queryKey: ["suggestions"],
-        queryFn: () => getSuggestions({}),
+        queryKey: ["suggestions", debouncedSearch],
+        queryFn: () => getSuggestions({
+            search: debouncedSearch,
+            sortBy: 'most_voted'
+        }),
     })
 
     const filterByStatus = (status: string) => suggestions?.filter((s) => s.status === status) || []
+
+    function handleClearFilters() {
+        setSearch("")
+    }
 
     return (
         <>
             <Helmet title="Envios da Comunidade" />
 
             <div className="flex flex-col gap-6 mt-4 h-[calc(100vh-160px)] overflow-hidden">
-                <header
-                    className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4 pl-5 py-3 shrink-0 rounded-r-lg bg-gradient-to-r from-transparent to-transparent hover:from-slate-50/50 transition-colors duration-300"
-                    style={{ borderLeftColor: BRAND_COLOR }}
-                    role="banner"
-                >
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-l-4 pl-5 py-2" style={{ borderLeftColor: BRAND_COLOR }}>
                     <div className="space-y-1">
-                        <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
-                            <LayoutGrid className="size-7 shrink-0" style={{ color: BRAND_COLOR }} aria-hidden="true" />
-                            <span>Sugestões da Comunidade</span>
+                        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-3">
+                            <LayoutGrid className="size-6" style={{ color: BRAND_COLOR }} />
+                            <span>Roadmap de Sugestões</span>
                         </h1>
-                        <p className="text-base text-muted-foreground leading-relaxed max-w-2xl">
-                            Acompanhe o que está sendo planejado e vote nas melhores ideias.
+                        <p className="text-sm text-muted-foreground">
+                            Pesquise ideias existentes antes de criar uma nova para evitar duplicatas.
                         </p>
                     </div>
-                </header>
+                </div>
+
+                <div className="flex flex-col lg:flex-row gap-3 items-center p-2 rounded-lg ">
+                    <div className="relative w-full lg:w-auto">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                        <Input
+                            placeholder="Buscar por título ou descrição..."
+                            className="h-8 w-full lg:w-[400px] pl-9 bg-white shadow-sm"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                    </div>
+
+                    {search && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleClearFilters}
+                            className="cursor-pointer h-8 px-2 text-muted-foreground hover:text-destructive gap-2 transition-colors"
+                        >
+                            <XCircle className="size-4" />
+                            Limpar busca
+                        </Button>
+                    )}
+                </div>
 
                 <div
                     className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto pb-4 h-full min-h-0 auto-cols-fr"
                     role="region"
-                    aria-label="Colunas de sugestões organizadas por status"
                 >
                     {COLUMN_CONFIG.map((column) => {
                         const Icon = column.icon
@@ -92,7 +113,7 @@ export function SuggestionBoardPage() {
                             <SuggestionColumn
                                 key={column.status}
                                 title={column.title}
-                                icon={<Icon className={`size-5 ${column.iconColor}`} aria-hidden="true" />}
+                                icon={<Icon className={`size-5 ${column.iconColor}`} />}
                                 color={column.color}
                                 dotColor={column.dotColor}
                                 suggestions={filterByStatus(column.status)}
@@ -102,6 +123,13 @@ export function SuggestionBoardPage() {
                     })}
                 </div>
             </div>
+
+            {/* Modal de Criação (Baseado no Dialog do modelo) */}
+            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                {/* Aqui você chamaria o seu componente de formulário:
+                <CreateSuggestionForm onSuccess={() => setIsCreateOpen(false)} /> 
+                */}
+            </Dialog>
         </>
     )
 }

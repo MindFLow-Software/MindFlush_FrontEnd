@@ -37,14 +37,17 @@ export function SuggestionColumn({ title, icon, color, dotColor, suggestions = [
         mutationFn: (suggestionId: string) => toggleSuggestionLike(suggestionId),
         onMutate: async (suggestionId) => {
             await queryClient.cancelQueries({ queryKey: ["suggestions"] })
-            const previousSuggestions = queryClient.getQueryData<Suggestion[]>(["suggestions"])
 
-            queryClient.setQueryData<Suggestion[]>(["suggestions"], (old) => {
+            const previousQueries = queryClient.getQueriesData<Suggestion[]>({ queryKey: ["suggestions"] })
+
+            queryClient.setQueriesData<Suggestion[]>({ queryKey: ["suggestions"] }, (old) => {
                 return old?.map((suggestion) => {
                     if (suggestion.id === suggestionId) {
                         const userId = profile?.id ?? ""
                         const isLiked = suggestion.likes.includes(userId)
-                        const newLikes = isLiked ? suggestion.likes.filter((id) => id !== userId) : [...suggestion.likes, userId]
+                        const newLikes = isLiked
+                            ? suggestion.likes.filter((id) => id !== userId)
+                            : [...suggestion.likes, userId]
 
                         return {
                             ...suggestion,
@@ -56,11 +59,13 @@ export function SuggestionColumn({ title, icon, color, dotColor, suggestions = [
                 })
             })
 
-            return { previousSuggestions }
+            return { previousQueries }
         },
         onError: (_err, _id, context) => {
-            if (context?.previousSuggestions) {
-                queryClient.setQueryData(["suggestions"], context.previousSuggestions)
+            if (context?.previousQueries) {
+                context.previousQueries.forEach(([queryKey, data]) => {
+                    queryClient.setQueryData(queryKey, data)
+                })
             }
         },
         onSettled: () => {
@@ -172,7 +177,7 @@ function SuggestionItem({
                                 }}
                                 type="button"
                             >
-                                <ThumbsUp className={cn("size-3.5 transition-all duration-300", isLiked && "fill-white")} />
+                                <ThumbsUp className={cn("size-3.5 transition-all duration-300", isLiked)} />
                                 <span className="min-w-[1ch] text-center">{item.likesCount}</span>
                             </button>
                         </div>
