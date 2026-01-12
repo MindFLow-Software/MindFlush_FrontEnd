@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useMemo } from "react"
-import { ThumbsUp, Calendar, User } from "lucide-react"
+import { ThumbsUp, Calendar } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -158,15 +158,10 @@ function SuggestionItem({
                         </div>
 
                         <div className="flex items-center justify-between pt-2 border-t border-dashed border-slate-200/60">
-                            <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                                <User className="size-3.5" />
-                                <span className="font-medium truncate max-w-[140px]">{item.psychologistName}</span>
-                            </div>
-
                             <button
                                 className={cn(
-                                    "cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all duration-300 text-xs font-semibold",
-                                    "active:scale-95 hover:scale-105 relative z-10",
+                                    "cursor-pointer flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full transition-all duration-300 text-xs font-semibold",
+                                    "active:scale-95 hover:scale-105 relative z-10 min-w-[56px] tabular-nums",
                                     isLiked
                                         ? "bg-emerald-500 text-white shadow-md shadow-emerald-200/60 hover:bg-emerald-600"
                                         : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200",
@@ -178,7 +173,7 @@ function SuggestionItem({
                                 type="button"
                             >
                                 <ThumbsUp className={cn("size-3.5 transition-all duration-300", isLiked)} />
-                                <span className="min-w-[1ch] text-center">{item.likesCount}</span>
+                                <span>{item.likesCount}</span>
                             </button>
                         </div>
                     </div>
@@ -201,15 +196,6 @@ function SuggestionItem({
                     </div>
 
                     <footer className="flex flex-wrap gap-6 pt-2 border-t border-dashed">
-                        <div className="flex items-center gap-2 text-slate-500">
-                            <div className="size-8 rounded-full bg-[#27187E]/10 flex items-center justify-center">
-                                <User className="size-4 text-[#27187E]" />
-                            </div>
-                            <div className="flex flex-col text-xs">
-                                <span className="font-bold text-slate-400">Autor</span>
-                                <span className="font-medium text-slate-700">{item.psychologistName}</span>
-                            </div>
-                        </div>
                         <div className="flex items-center gap-2 text-slate-500 text-xs">
                             <div className="size-8 rounded-full bg-slate-100 flex items-center justify-center">
                                 <Calendar className="size-4" />

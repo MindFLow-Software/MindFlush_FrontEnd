@@ -14,7 +14,6 @@ import { DashboardFinance } from './pages/app/finance/dashboard-finance'
 import { AdminApprovalsPage } from './pages/app/admin/approvals'
 import { AvailabilityPage } from './pages/app/appointment/availability-page'
 import { SuggestionPage } from './pages/app/suggestion/suggestion-page'
-import { SuggestionBoardPage } from './pages/app/suggestion/suggestion-board-page'
 
 const getUser = () => {
   const userData = localStorage.getItem('user')
@@ -124,7 +123,6 @@ export const router = createBrowserRouter([
         ),
       },
       { path: '/suggestion', element: <SuggestionPage /> },
-      { path: '/suggestion-list', element: <SuggestionBoardPage /> },
     ],
   },
 ])
