@@ -156,7 +156,7 @@ export function SignInForm({ className, ...props }: React.ComponentProps<"form">
           <Button
             disabled={isSubmitting}
             type="submit"
-            className="w-full h-11 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] transition-all duration-200 font-medium"
+            className="cursor-pointer w-full h-11 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] transition-all duration-200 font-medium"
           >
             {isSubmitting ? (
               <span className="flex items-center gap-2">
