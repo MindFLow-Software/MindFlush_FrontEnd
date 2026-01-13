@@ -12,34 +12,35 @@ export function SignIn() {
   const [isChecking, setIsChecking] = useState(true)
 
   useEffect(() => {
-  let isMounted = true
+    let isMounted = true
 
-  async function checkAuthentication() {
-    try {
-      await Promise.race([
-        api.get('/psychologist/me'),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('timeout')), 8000),
-        ),
-      ])
+    async function checkAuthentication() {
+      try {
+        await api.get('/psychologist/me')
+          .then(() => navigate('/dashboard'))
+          .catch(() => setIsChecking(false))
 
-      if (isMounted) {
-        navigate('/dashboard', { replace: true })
-      }
-    } catch (error) {
-      console.error('Erro na checagem de auth:', error)
-      if (isMounted) {
-        setIsChecking(false)
+        if (isMounted) {
+          navigate('/dashboard', { replace: true })
+        }
+      } catch (error) {
+        console.error('Erro capturado:', error)
+        if (isMounted) {
+          setIsChecking(false)
+        }
+      } finally {
+        if (isMounted) {
+          setTimeout(() => setIsChecking(false), 1000)
+        }
       }
     }
-  }
 
-  checkAuthentication()
-  
-  return () => {
-    isMounted = false
-  }
-}, [navigate])
+    checkAuthentication()
+
+    return () => {
+      isMounted = false
+    }
+  }, [navigate])
 
   if (isChecking) {
     return (
