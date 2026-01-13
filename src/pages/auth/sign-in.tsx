@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react" // Adicionado
-import { useNavigate } from "react-router-dom" // Adicionado
+"use client"
+
+import { useEffect, useState } from "react"
+import { useNavigate, Link } from "react-router-dom"
 import { Helmet } from "react-helmet-async"
-import { Link } from "react-router-dom"
 import { SignInForm } from "./components/sign-in-form"
 import { Button } from "@/components/ui/button"
 import { api } from "@/lib/axios"
@@ -11,22 +12,39 @@ export function SignIn() {
   const [isChecking, setIsChecking] = useState(true)
 
   useEffect(() => {
+    let isMounted = true
+
     async function checkAuthentication() {
       try {
+        // Tenta buscar o perfil do psicólogo
         await api.get('/psychologist/me')
 
-        navigate('/dashboard', { replace: true })
+        // Se retornar 200, significa que o cookie é válido
+        if (isMounted) {
+          navigate('/dashboard', { replace: true })
+        }
       } catch (error) {
-
-        setIsChecking(false)
+        // Se cair aqui (401), apenas liberamos a visualização do formulário
+        if (isMounted) {
+          setIsChecking(false)
+        }
       }
     }
 
     checkAuthentication()
+
+    return () => {
+      isMounted = false
+    }
   }, [navigate])
 
+  // Enquanto verifica se o usuário já tem cookie, não mostra nada (evita flicker)
   if (isChecking) {
-    return null
+    return (
+      <div className="flex min-h-svh items-center justify-center">
+        <p className="text-sm text-muted-foreground animate-pulse">Carregando...</p>
+      </div>
+    )
   }
 
   return (
