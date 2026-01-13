@@ -1,13 +1,25 @@
 "use client"
 
-import { useMemo } from "react"
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts"
+import * as React from "react"
+import { Cell, Pie, PieChart } from "recharts"
 import { useQuery } from "@tanstack/react-query"
-import { Loader2, AlertCircle, Mars, PieChart as PieChartIcon, Info } from "lucide-react"
+import { subDays, startOfDay, endOfDay } from "date-fns"
+import { Loader2, Users, AlertCircle, RefreshCcw } from "lucide-react"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { getPatientsByGender, type PatientsByGenderResponse } from "@/api/get-patients-by-gender"
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card"
+import {
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+    type ChartConfig,
+} from "@/components/ui/chart"
+import { getPatientsByGender } from "@/api/get-patients-by-gender"
 
 const GENDER_TRANSLATIONS: Record<string, string> = {
     FEMININE: "Feminino",
@@ -15,152 +27,139 @@ const GENDER_TRANSLATIONS: Record<string, string> = {
     OTHER: "Outros",
 }
 
-// Cores mapeadas para as variáveis do seu tema CSS
 const CHART_COLORS = [
     "var(--chart-2)",
     "var(--chart-6)",
     "var(--chart-1)",
-    "var(--chart-4)",
-    "var(--chart-5)",
 ]
 
-function CustomTooltip({ active, payload, total }: any) {
-    if (active && payload && payload.length && total > 0) {
-        const data = payload[0]
-        const percentage = ((data.value / total) * 100).toFixed(1)
-        return (
-            <div className="rounded-lg border-none bg-card/95 backdrop-blur-sm p-3 shadow-2xl">
-                <p className="font-bold text-xs uppercase tracking-wider text-muted-foreground mb-1">
-                    {data.name}
-                </p>
-                <p className="text-sm font-bold text-foreground">
-                    {data.value} pacientes <span className="text-primary ml-1">({percentage}%)</span>
-                </p>
-            </div>
-        )
-    }
-    return null
-}
+const chartConfig = {
+    patients: {
+        label: "Pacientes",
+    },
+} satisfies ChartConfig
 
 interface PatientsByGenderChartProps {
-    startDate: Date | undefined
     endDate: Date | undefined
 }
 
-export function PatientsByGenderChart({ startDate, endDate }: PatientsByGenderChartProps) {
-    const startIso = startDate?.toISOString()
-    const endIso = endDate?.toISOString()
+export function PatientsByGenderChart({ endDate }: PatientsByGenderChartProps) {
+    const [timeRange] = React.useState("30d")
 
-    const { data: rawData, isLoading, isError, refetch } = useQuery<PatientsByGenderResponse[]>({
-        queryKey: ['dashboard', 'gender-stats', startIso, endIso],
-        queryFn: () => getPatientsByGender({ startDate: startIso, endDate: endIso }),
+    // Cálculo interno do período
+    const { startDateToFetch, endDateToFetch } = React.useMemo(() => {
+        const referenceDate = endDate ? new Date(endDate) : new Date()
+        let daysToSubtract = 30
+
+        if (timeRange === "90d") daysToSubtract = 90
+        if (timeRange === "7d") daysToSubtract = 7
+
+        return {
+            startDateToFetch: startOfDay(subDays(referenceDate, daysToSubtract)),
+            endDateToFetch: endOfDay(referenceDate),
+        }
+    }, [timeRange, endDate])
+
+    const { data: rawData, isLoading, isError, refetch } = useQuery({
+        queryKey: ['dashboard', 'gender-stats', startDateToFetch, endDateToFetch],
+        queryFn: () => getPatientsByGender({
+            startDate: startDateToFetch.toISOString(),
+            endDate: endDateToFetch.toISOString()
+        }),
+        enabled: !!startDateToFetch && !!endDateToFetch,
         staleTime: 1000 * 60 * 5,
-        retry: 1,
     })
 
-    const chartData = useMemo(() => {
-        if (!rawData) return []
-        return rawData.map(item => ({
+    const { chartData, totalPatients, isEmpty } = React.useMemo(() => {
+        if (!rawData) return { chartData: [], totalPatients: 0, isEmpty: true }
+
+        const translatedData = rawData.map(item => ({
             ...item,
             gender: GENDER_TRANSLATIONS[item.gender] || item.gender,
         }))
+
+        const total = translatedData.reduce((sum, item) => sum + item.patients, 0)
+
+        return {
+            chartData: translatedData,
+            totalPatients: total,
+            isEmpty: translatedData.length === 0 || total === 0
+        }
     }, [rawData])
 
-    const totalPatients = useMemo(
-        () => chartData.reduce((sum, item) => sum + item.patients, 0),
-        [chartData]
-    )
-
-    const isEmpty = useMemo(() => {
-        return chartData.length === 0 || totalPatients === 0
-    }, [chartData, totalPatients])
-
     return (
-        <Card className="col-span-1 border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-card rounded-xl overflow-hidden flex flex-col transition-all duration-500">
-            <CardHeader className="px-7 pt-7 pb-4">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-inner">
-                            <PieChartIcon className="size-5" />
-                        </div>
-                        <div className="flex flex-col">
-                            <CardTitle className="text-sm font-bold tracking-tight text-foreground/90 uppercase">
-                                Gênero
-                            </CardTitle>
-                            <p className="text-[11px] font-medium text-muted-foreground/80">
-                                Distribuição por sexo biológico
-                            </p>
-                        </div>
+        <Card className="border border-slate-100 bg-white shadow-sm rounded-2xl overflow-hidden flex flex-col">
+            <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
+                <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-4">
+                    <CardTitle className="text-base font-semibold uppercase tracking-wider">Gênero</CardTitle>
+                    <CardDescription className="text-sm">
+                        Distribuição por sexo biológico
+                    </CardDescription>
+                </div>
+                <div className="flex border-t sm:border-t-0 sm:border-l">
+                    <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 px-6 py-4 text-left sm:px-8">
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                            Total Geral
+                        </span>
+                        <span className="text-xl font-bold leading-none sm:text-2xl">
+                            {totalPatients.toLocaleString()}
+                        </span>
                     </div>
                 </div>
             </CardHeader>
 
-            <CardContent className="flex-1 flex flex-col px-7 pb-7">
+            <CardContent className="px-6 pt-6 pb-6 flex-1 flex flex-col">
                 {isLoading ? (
-                    <div className="flex-1 flex flex-col items-center justify-center space-y-8 min-h-[300px]">
-                        <div className="relative flex items-center justify-center">
-                            <Skeleton className="h-40 w-40 rounded-full border-8 border-muted/20" />
-                            <Loader2 className="absolute size-6 animate-spin text-muted-foreground/40" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 w-full">
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-4 w-full" />
-                        </div>
+                    <div className="flex h-[300px] w-full items-center justify-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
                 ) : isError ? (
-                    <div className="flex-1 flex flex-col items-center justify-center gap-3 min-h-[300px] rounded-xl bg-destructive/5 border border-destructive/10 text-destructive">
-                        <AlertCircle className="size-5" />
-                        <span className="text-xs font-semibold">Erro ao carregar gêneros</span>
-                        <button onClick={() => refetch()} className="text-[10px] uppercase font-bold text-primary hover:underline">
-                            Tentar novamente
+                    <div className="flex h-[300px] flex-col items-center justify-center text-center">
+                        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-500">
+                            <AlertCircle className="size-6" />
+                        </div>
+                        <p className="text-sm font-medium text-slate-700">Erro ao carregar dados</p>
+                        <button onClick={() => refetch()} className="mt-2 text-xs font-bold text-blue-600 flex items-center gap-1 hover:underline">
+                            <RefreshCcw size={12} /> Tentar novamente
                         </button>
                     </div>
                 ) : isEmpty ? (
-                    <div className="flex h-[220px] flex-col items-center justify-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                            <Mars className="h-6 w-6 opacity-50" />
+                    <div className="flex h-[300px] flex-col items-center justify-center text-center">
+                        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-50">
+                            <Users className="h-5 w-5 text-slate-300" />
                         </div>
-                        <div className="text-center space-y-1.5 px-6">
-                            <p className="text-sm font-bold text-foreground/80">Sem dados de gênero</p>
-                            <p className="text-[11px] font-medium leading-relaxed max-w-[220px]">
-                                Nenhum paciente com gênero definido identificado neste período.
-                            </p>
-                        </div>
+                        <p className="text-sm font-medium text-slate-700">Sem dados de gênero</p>
+                        <p className="mt-1 text-xs text-slate-400">Nenhum paciente identificado neste período</p>
                     </div>
                 ) : (
                     <>
-                        <div className="flex-1 min-h-[260px] flex items-center justify-center">
-                            <ResponsiveContainer width="100%" height={260}>
+                        <div className="flex-1 min-h-[250px] flex items-center justify-center">
+                            <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[250px] w-full">
                                 <PieChart>
+                                    <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
                                     <Pie
                                         data={chartData}
-                                        nameKey="gender"
                                         dataKey="patients"
-                                        cx="50%"
-                                        cy="50%"
-                                        outerRadius={95}
-                                        innerRadius={75}
-                                        strokeWidth={4}
-                                        paddingAngle={6}
-                                        className="outline-none"
-                                        animationDuration={1200}
-                                        animationEasing="ease-in-out"
+                                        nameKey="gender"
+                                        innerRadius={70}
+                                        outerRadius={90}
+                                        strokeWidth={5}
+                                        stroke="hsl(var(--background))"
+                                        paddingAngle={4}
                                     >
                                         {chartData.map((_, index) => (
                                             <Cell
                                                 key={`cell-${index}`}
                                                 fill={CHART_COLORS[index % CHART_COLORS.length]}
-                                                className="stroke-card hover:opacity-80 transition-all duration-300 cursor-pointer outline-none"
+                                                className="hover:opacity-80 transition-opacity cursor-pointer outline-none"
                                             />
                                         ))}
                                     </Pie>
-                                    <Tooltip content={<CustomTooltip total={totalPatients} />} />
                                 </PieChart>
-                            </ResponsiveContainer>
+                            </ChartContainer>
                         </div>
 
-                        {/* Legenda Estilizada Soft UI */}
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-6 border-t border-border/50 mt-auto">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-6 border-t border-slate-100 mt-6">
                             {chartData.map((item, index) => {
                                 const percentage = ((item.patients / totalPatients) * 100).toFixed(1)
                                 return (
@@ -170,11 +169,11 @@ export function PatientsByGenderChart({ startDate, endDate }: PatientsByGenderCh
                                                 className="h-2 w-2 rounded-full shrink-0 shadow-sm"
                                                 style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
                                             />
-                                            <span className="text-[11px] font-bold text-foreground/70 uppercase tracking-tight whitespace-nowrap group-hover:text-foreground transition-colors">
+                                            <span className="text-[11px] font-bold uppercase tracking-tight text-muted-foreground group-hover:text-foreground transition-colors">
                                                 {item.gender}
                                             </span>
                                         </div>
-                                        <span className="text-[11px] font-bold text-muted-foreground/60 tabular-nums">
+                                        <span className="text-[11px] font-bold tabular-nums">
                                             {percentage}%
                                         </span>
                                     </div>
@@ -183,13 +182,6 @@ export function PatientsByGenderChart({ startDate, endDate }: PatientsByGenderCh
                         </div>
                     </>
                 )}
-
-                <div className="mt-6 flex items-center gap-2 px-1">
-                    <Info className="size-3 text-muted-foreground/40" />
-                    <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider">
-                        Análise de {totalPatients} pacientes
-                    </p>
-                </div>
             </CardContent>
         </Card>
     )

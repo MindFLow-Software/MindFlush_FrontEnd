@@ -1,150 +1,163 @@
 "use client"
 
-import { useMemo } from "react"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Cell } from "recharts"
-import { format, subDays } from "date-fns"
-import { ptBR } from "date-fns/locale"
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-
-import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-
-import { Users } from "lucide-react"
-import { getAmountPatientsChart } from "@/api/get-amount-patients-chart"
+import * as React from "react"
+import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
 import { useQuery } from "@tanstack/react-query"
-import { Skeleton } from "@/components/ui/skeleton"
+import { format, subDays, startOfDay, endOfDay } from "date-fns"
+import { ptBR } from "date-fns/locale"
+import { Loader2, Users } from "lucide-react"
+
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card"
+import {
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+    type ChartConfig,
+} from "@/components/ui/chart"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { getAmountPatientsChart } from "@/api/get-amount-patients-chart"
+
+interface NewPatientsBarChartProps {
+    endDate: Date | undefined
+}
 
 const chartConfig = {
     newPatients: {
         label: "Pacientes",
-        color: "hsl(217, 91%, 60%)",
+        color: "var(--chart-1)",
     },
 } satisfies ChartConfig
 
-export function NewPatientsBarChart({
-    startDate: propStartDate,
-    endDate: propEndDate,
-}: { startDate?: Date; endDate?: Date }) {
-    const { startDate, endDate } = useMemo(() => {
-        const end = propEndDate || new Date()
-        const start = propStartDate || subDays(end, 7)
-        return { startDate: start, endDate: end }
-    }, [propStartDate, propEndDate])
+export function NewPatientsBarChart({ endDate }: NewPatientsBarChartProps) {
+    const [timeRange, setTimeRange] = React.useState("30d")
 
-    const { data, isLoading, isError } = useQuery({
-        queryKey: ["new-patients-bar", startDate.toISOString(), endDate.toISOString()],
-        queryFn: () => getAmountPatientsChart({ startDate, endDate }),
-        retry: 1,
+    const { startDateToFetch, endDateToFetch } = React.useMemo(() => {
+        const referenceDate = endDate ? new Date(endDate) : new Date()
+        let daysToSubtract = 30
+
+        if (timeRange === "30d") daysToSubtract = 30
+        if (timeRange === "7d") daysToSubtract = 7
+
+        return {
+            startDateToFetch: startOfDay(subDays(referenceDate, daysToSubtract)),
+            endDateToFetch: endOfDay(referenceDate),
+        }
+    }, [timeRange, endDate])
+
+    const { data: chartData, isLoading } = useQuery({
+        queryKey: ["patients-stats", startDateToFetch, endDateToFetch],
+        queryFn: () =>
+            getAmountPatientsChart({
+                startDate: startDateToFetch,
+                endDate: endDateToFetch,
+            }),
+        enabled: !!startDateToFetch && !!endDateToFetch,
     })
 
-    const chartData = useMemo(() => data || [], [data])
-    const maxPatients = useMemo(() => Math.max(...chartData.map((d) => d.newPatients), 0), [chartData])
-    const yAxisMax = useMemo(() => Math.max(5, maxPatients + 1), [maxPatients])
-
-    const totalPatients = useMemo(() => chartData.reduce((acc, d) => acc + d.newPatients, 0), [chartData])
+    const { total, isEmpty } = React.useMemo(() => {
+        const totalCount = chartData?.reduce((acc, curr) => acc + curr.newPatients, 0) ?? 0
+        return {
+            total: totalCount,
+            isEmpty: !chartData || chartData.length === 0 || totalCount === 0
+        }
+    }, [chartData])
 
     return (
-        <Card className="col-span-6 border border-slate-100 bg-white shadow-sm rounded-2xl overflow-hidden">
-            <CardHeader className="px-6 pb-2">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <CardTitle className="text-sm font-semibold text-foreground uppercase tracking-wider">
-                            Novos Pacientes
-                        </CardTitle>
-                        <span className="text-xs text-muted-foreground">
-                            Cadastros no período selecionado
+        <Card className="col-span-full lg:col-span-6 border border-slate-100 bg-white shadow-sm rounded-2xl overflow-hidden">
+            <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
+                <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-4">
+                    <CardTitle className="text-base font-semibold">Fluxo de Pacientes</CardTitle>
+                    <CardDescription className="text-sm">
+                        Novos cadastros realizados no período
+                    </CardDescription>
+                </div>
+                <div className="flex border-t sm:border-t-0 sm:border-l">
+                    <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 px-6 py-4 text-left sm:px-8">
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                            Total Geral
+                        </span>
+                        <span className="text-xl font-bold leading-none sm:text-2xl">
+                            {total.toLocaleString()}
                         </span>
                     </div>
-
-                    {!isLoading && !isError && chartData.length > 0 && (
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-bold text-slate-900">{totalPatients}</span>
-                            <span className="text-lg text-muted-foreground">Pacientes</span>
-                        </div>
-                    )}
+                    <div className="flex items-center pr-4">
+                        <Select value={timeRange} onValueChange={setTimeRange}>
+                            <SelectTrigger
+                                className="w-[140px] cursor-pointer rounded-lg bg-muted/50 border-none focus:ring-0"
+                                aria-label="Selecionar período"
+                            >
+                                <SelectValue placeholder="Período" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                                <SelectItem value="90d" className="cursor-pointer rounded-lg">90 dias</SelectItem>
+                                <SelectItem value="30d" className="cursor-pointer rounded-lg">30 dias</SelectItem>
+                                <SelectItem value="7d" className="cursor-pointer rounded-lg">7 dias</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
             </CardHeader>
-
-            <CardContent className="px-6 pb-6 pt-2">
+            <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
                 {isLoading ? (
-                    <div className="flex h-[200px] items-end gap-4 pt-8">
-                        {[...Array(7)].map((_, i) => (
-                            <Skeleton
-                                key={i}
-                                className="w-full rounded-lg bg-slate-100"
-                                style={{ height: `${30 + Math.random() * 50}%` }}
-                            />
-                        ))}
+                    <div className="flex h-[250px] w-full items-center justify-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
-                ) : isError ? (
-                    <div className="flex h-[200px] flex-col items-center justify-center text-center">
-                        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
-                            <span className="text-xl">!</span>
-                        </div>
-                        <p className="text-sm font-medium text-slate-700">Erro ao carregar dados</p>
-                        <p className="mt-1 text-xs text-slate-400">Tente novamente em instantes</p>
-                    </div>
-                ) : chartData.length === 0 || chartData.every((d) => d.newPatients === 0) ? (
-                    <div className="flex h-[200px] flex-col items-center justify-center text-center">
+                ) : isEmpty ? (
+                    <div className="flex h-[250px] flex-col items-center justify-center text-center">
                         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-50">
                             <Users className="h-5 w-5 text-slate-300" />
                         </div>
-                        <p className="text-sm font-medium text-slate-700">Nenhum registro</p>
-                        <p className="mt-1 text-xs text-slate-400">Não há pacientes neste período</p>
+                        <p className="text-sm font-medium text-slate-700">Nenhum paciente</p>
+                        <p className="mt-1 text-xs text-slate-400">Sem novos cadastros neste período</p>
                     </div>
                 ) : (
-                    <ChartContainer config={chartConfig} className="h-[200px] w-full">
-                        <BarChart data={chartData} margin={{ top: 20, left: -25, right: 5, bottom: 0 }}>
-                            <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" />
-
+                    <ChartContainer
+                        config={chartConfig}
+                        className="aspect-auto h-[250px] w-full"
+                    >
+                        <BarChart
+                            accessibilityLayer
+                            data={chartData}
+                            margin={{
+                                left: 12,
+                                right: 12,
+                            }}
+                        >
+                            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f1f5f9" />
                             <XAxis
                                 dataKey="date"
                                 tickLine={false}
                                 axisLine={false}
-                                tickMargin={12}
-                                fontSize={12}
-                                fontWeight={500}
-                                stroke="#94a3b8"
-                                tickFormatter={(value) => format(new Date(value), "EEE", { locale: ptBR })}
+                                tickMargin={8}
+                                minTickGap={32}
+                                tickFormatter={(value) => format(new Date(value), "dd MMM", { locale: ptBR })}
                             />
-
-                            <YAxis
-                                domain={[0, yAxisMax]}
-                                tickLine={false}
-                                axisLine={false}
-                                fontSize={12}
-                                fontWeight={500}
-                                stroke="#cbd5e1"
-                                allowDecimals={false}
-                                tickCount={4}
-                            />
-
                             <ChartTooltip
-                                cursor={{ fill: "#f1f5f9", radius: 8 }}
+                                cursor={false}
                                 content={
                                     <ChartTooltipContent
-                                        className="border-0 shadow-lg bg-slate-900 text-white rounded-lg px-3 py-2"
-                                        labelClassName="text-slate-300 text-xs"
-                                        labelFormatter={(value) => format(new Date(value), "dd MMM, yyyy", { locale: ptBR })}
-                                        formatter={(value) => (
-                                            <div className="flex items-center gap-1.5 font-bold text-white">
-                                                <span>{value}</span>
-                                                <span className="text-xs font-normal text-slate-400">Pacientes</span>
-                                            </div>
-                                        )}
+                                        labelFormatter={(value) => format(new Date(value), "dd 'de' MMMM", { locale: ptBR })}
+                                        indicator="dashed"
                                     />
                                 }
                             />
-
-                            <Bar dataKey="newPatients" fill="#3b82f6" radius={[8, 8, 0, 0]} barSize={32} animationDuration={800}>
-                                {chartData.map((entry, index) => (
-                                    <Cell
-                                        key={`cell-${index}`}
-                                        fill={entry.newPatients === maxPatients ? "#2563eb" : "#3b82f6"}
-                                        className="cursor-pointer transition-opacity duration-200 hover:opacity-80"
-                                    />
-                                ))}
-                            </Bar>
+                            <Bar
+                                dataKey="newPatients"
+                                fill="var(--color-newPatients)"
+                                radius={[4, 4, 0, 0]}
+                            />
                         </BarChart>
                     </ChartContainer>
                 )}

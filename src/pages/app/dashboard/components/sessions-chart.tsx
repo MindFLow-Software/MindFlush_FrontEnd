@@ -1,102 +1,137 @@
 "use client"
 
-import { useMemo } from "react"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Cell } from "recharts"
+import * as React from "react"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { useQuery } from "@tanstack/react-query"
 import { format, subDays, startOfDay, endOfDay } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { CalendarOff, Loader2, RefreshCcw, AlertCircle } from "lucide-react"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
-    type ChartConfig,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card"
+import {
     ChartContainer,
     ChartTooltip,
     ChartTooltipContent,
+    type ChartConfig,
 } from "@/components/ui/chart"
-
-import { CalendarOff, RefreshCcw, AlertCircle } from "lucide-react"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { getDailySessionsMetrics } from "@/api/get-daily-sessions-metrics"
-import { useQuery } from "@tanstack/react-query"
-import { Skeleton } from "@/components/ui/skeleton"
+
+interface SessionsBarChartProps {
+    endDate: Date | undefined
+}
 
 const chartConfig = {
     count: {
         label: "Sessões",
-        color: "#3b82f6",
+        color: "var(--chart-1)",
     },
 } satisfies ChartConfig
 
-interface SessionsBarChartProps {
-    startDate?: Date
-    endDate?: Date
-}
+export function SessionsBarChart({ endDate }: SessionsBarChartProps) {
+    const [timeRange, setTimeRange] = React.useState("30d")
 
-export function SessionsBarChart({ startDate: propStartDate, endDate: propEndDate }: SessionsBarChartProps) {
-    const dateRange = useMemo(() => {
-        const end = propEndDate ? endOfDay(propEndDate) : endOfDay(new Date())
-        const start = propStartDate ? startOfDay(propStartDate) : startOfDay(subDays(end, 7))
-        return { startDate: start, endDate: end }
-    }, [propStartDate, propEndDate])
+    const { startDateToFetch, endDateToFetch } = React.useMemo(() => {
+        const referenceDate = endDate ? new Date(endDate) : new Date()
+        let daysToSubtract = 30
+
+        if (timeRange === "90d") daysToSubtract = 90
+        if (timeRange === "7d") daysToSubtract = 7
+
+        return {
+            startDateToFetch: startOfDay(subDays(referenceDate, daysToSubtract)),
+            endDateToFetch: endOfDay(referenceDate)
+        }
+    }, [timeRange, endDate])
 
     const { data, isLoading, isError, refetch } = useQuery({
-        queryKey: ["daily-sessions-bar", dateRange.startDate.toISOString(), dateRange.endDate.toISOString()],
-        queryFn: () => getDailySessionsMetrics(dateRange.startDate.toISOString(), dateRange.endDate.toISOString()),
+        queryKey: ["daily-sessions-bar", startDateToFetch.toISOString(), endDateToFetch.toISOString()],
+        queryFn: () => getDailySessionsMetrics(
+            startDateToFetch.toISOString(),
+            endDateToFetch.toISOString()
+        ),
+        enabled: !!startDateToFetch && !!endDateToFetch,
         staleTime: 1000 * 60 * 5,
-        retry: 1,
     })
 
-    const chartData = useMemo(() => data || [], [data])
-    const totalSessions = useMemo(() => chartData.reduce((acc, d) => acc + d.count, 0), [chartData])
-    const maxSessions = useMemo(() => Math.max(...chartData.map((d) => d.count), 0), [chartData])
-    const yAxisMax = useMemo(() => Math.max(5, Math.ceil(maxSessions * 1.1)), [maxSessions])
+    const { chartData, totalSessions, isEmpty } = React.useMemo(() => {
+        const sessions = data || []
+        const total = sessions.reduce((acc, d) => acc + d.count, 0)
+        return {
+            chartData: sessions,
+            totalSessions: total,
+            isEmpty: sessions.length === 0 || total === 0
+        }
+    }, [data])
 
     return (
-        <Card className="col-span-6 border border-slate-100 bg-white shadow-sm rounded-2xl overflow-hidden">
-            <CardHeader className="px-6 pb-2 pt-6">
-                <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                        <CardTitle className="text-sm font-semibold text-foreground uppercase tracking-wider">
-                            Sessões Realizadas
-                        </CardTitle>
-                        <span className="text-xs text-muted-foreground">
-                            Volume diário de atendimentos concluídos
+        <Card className="col-span-full lg:col-span-6 border border-slate-100 bg-white shadow-sm rounded-2xl overflow-hidden">
+            <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
+                <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-4">
+                    <CardTitle className="text-base font-semibold">Atendimentos</CardTitle>
+                    <CardDescription className="text-sm">
+                        Volume diário de sessões concluídas
+                    </CardDescription>
+                </div>
+                <div className="flex border-t sm:border-t-0 sm:border-l">
+                    <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 px-6 py-4 text-left sm:px-8 border-r sm:border-r-0">
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                            Total Geral
+                        </span>
+                        <span className="text-xl font-bold leading-none sm:text-2xl">
+                            {totalSessions.toLocaleString()}
                         </span>
                     </div>
-
-                    {!isLoading && !isError && chartData.length > 0 && (
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-bold text-slate-900">{totalSessions}</span>
-                            <span className="text-lg text-muted-foreground font-medium">Sessões</span>
-                        </div>
-                    )}
+                    <div className="flex items-center px-4">
+                        <Select value={timeRange} onValueChange={setTimeRange}>
+                            <SelectTrigger
+                                className="w-[140px] cursor-pointer rounded-lg bg-muted/50 border-none focus:ring-0"
+                                aria-label="Selecionar período"
+                            >
+                                <SelectValue placeholder="Últimos 30 dias" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                                <SelectItem value="90d" className="cursor-pointer rounded-lg">90 dias</SelectItem>
+                                <SelectItem value="30d" className="cursor-pointer rounded-lg">30 dias</SelectItem>
+                                <SelectItem value="7d" className="cursor-pointer rounded-lg">7 dias</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
             </CardHeader>
 
-            <CardContent className="px-6 pb-6 pt-2">
+            <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
                 {isLoading ? (
-                    <div className="flex h-[200px] items-end gap-4 pt-8">
-                        {[...Array(7)].map((_, i) => (
-                            <Skeleton
-                                key={i}
-                                className="w-full rounded-lg bg-slate-100"
-                                style={{ height: `${30 + Math.random() * 50}%` }}
-                            />
-                        ))}
+                    <div className="flex h-[250px] w-full items-center justify-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
                 ) : isError ? (
-                    <div className="flex h-[200px] flex-col items-center justify-center text-center">
+                    <div className="flex h-[250px] flex-col items-center justify-center text-center">
                         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-500">
                             <AlertCircle className="size-6" />
                         </div>
-                        <p className="text-sm font-medium text-slate-700">Erro ao carregar sessões</p>
+                        <p className="text-sm font-medium text-slate-700">Erro ao carregar dados</p>
                         <button
                             onClick={() => refetch()}
-                            className="mt-2 text-xs font-bold text-primary flex items-center gap-1 hover:underline"
+                            className="mt-2 text-xs font-bold text-blue-600 flex items-center gap-1 hover:underline"
                         >
                             <RefreshCcw size={12} /> Tentar novamente
                         </button>
                     </div>
-                ) : chartData.length === 0 || chartData.every(d => d.count === 0) ? (
-                    <div className="flex h-[200px] flex-col items-center justify-center text-center">
+                ) : isEmpty ? (
+                    <div className="flex h-[250px] flex-col items-center justify-center text-center">
                         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-50">
                             <CalendarOff className="h-5 w-5 text-slate-300" />
                         </div>
@@ -104,58 +139,40 @@ export function SessionsBarChart({ startDate: propStartDate, endDate: propEndDat
                         <p className="mt-1 text-xs text-slate-400">Sem atendimentos neste período</p>
                     </div>
                 ) : (
-                    <ChartContainer config={chartConfig} className="h-[200px] w-full">
-                        <BarChart data={chartData} margin={{ top: 20, left: -25, right: 5, bottom: 0 }}>
-                            <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" />
-
+                    <ChartContainer config={chartConfig} className="aspect-auto h-[250px] w-full">
+                        <BarChart
+                            accessibilityLayer
+                            data={chartData}
+                            margin={{ left: 0, right: 0, top: 10 }}
+                        >
+                            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f1f5f9" />
                             <XAxis
                                 dataKey="date"
                                 tickLine={false}
                                 axisLine={false}
-                                tickMargin={12}
-                                fontSize={12}
-                                fontWeight={500}
-                                stroke="#94a3b8"
-                                tickFormatter={(value) => format(new Date(value), "EEE", { locale: ptBR })}
+                                tickMargin={8}
+                                minTickGap={32}
+                                tickFormatter={(value) => format(new Date(value), "dd MMM", { locale: ptBR })}
                             />
-
                             <YAxis
-                                domain={[0, yAxisMax]}
-                                tickLine={false}
-                                axisLine={false}
-                                fontSize={12}
-                                fontWeight={500}
-                                stroke="#cbd5e1"
-                                allowDecimals={false}
-                                tickCount={4}
+                                hide
+                                domain={[0, 'auto']}
                             />
-
                             <ChartTooltip
-                                cursor={{ fill: "#f1f5f9", radius: 8 }}
+                                cursor={{ fill: "#f8fafc", radius: 8 }}
                                 content={
                                     <ChartTooltipContent
-                                        className="border-0 shadow-lg bg-slate-900 text-white rounded-lg px-3 py-2"
-                                        labelClassName="text-slate-300 text-xs"
-                                        labelFormatter={(value) => format(new Date(value), "dd MMM, yyyy", { locale: ptBR })}
-                                        formatter={(value) => (
-                                            <div className="flex items-center gap-1.5 font-bold text-white">
-                                                <span>{value}</span>
-                                                <span className="text-xs font-normal text-slate-400">Sessões</span>
-                                            </div>
-                                        )}
+                                        labelFormatter={(value) => format(new Date(value), "dd 'de' MMMM", { locale: ptBR })}
+                                        indicator="dashed"
                                     />
                                 }
                             />
-
-                            <Bar dataKey="count" radius={[8, 8, 0, 0]} barSize={32} animationDuration={800}>
-                                {chartData.map((entry, index) => (
-                                    <Cell
-                                        key={`cell-${index}`}
-                                        fill={entry.count === maxSessions && maxSessions > 0 ? "#2563eb" : "#3b82f6"}
-                                        className="cursor-pointer transition-opacity duration-200 hover:opacity-80"
-                                    />
-                                ))}
-                            </Bar>
+                            <Bar
+                                dataKey="count"
+                                fill="var(--color-count)"
+                                radius={[4, 4, 0, 0]}
+                                barSize={timeRange === "7d" ? 40 : 12}
+                            />
                         </BarChart>
                     </ChartContainer>
                 )}
