@@ -5,7 +5,7 @@ export interface Suggestion {
   title: string
   description: string
   category: "UI_UX" | "SCHEDULING" | "REPORTS" | "PRIVACY_LGPD" | "INTEGRATIONS" | "OTHERS"
-  status: "PENDING" | "UNDER_REVIEW" | "IMPLEMENTED" | "REJECTED"
+  status: "PENDING" | "OPEN" | "UNDER_REVIEW" | "PLANNED" | "IMPLEMENTED" | "REJECTED"
   likes: string[]
   likesCount: number
   psychologistName: string

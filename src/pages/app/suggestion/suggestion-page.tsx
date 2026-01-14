@@ -9,7 +9,8 @@ import {
     PartyPopper,
     Search,
     XCircle,
-    Plus
+    Plus,
+    Lightbulb
 } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 
@@ -34,9 +35,38 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 const COLUMN_CONFIG = [
-    { title: "Em Análise", icon: Microscope, status: "UNDER_REVIEW", color: "bg-blue-100", dotColor: "bg-blue-500", iconColor: "text-blue-800" },
-    { title: "Próximos Passos", icon: Rocket, status: "PLANNED", color: "bg-emerald-100", dotColor: "bg-emerald-500", iconColor: "text-emerald-800" },
-    { title: "Concluído", icon: PartyPopper, status: "IMPLEMENTED", color: "bg-yellow-100", dotColor: "bg-yellow-500", iconColor: "text-yellow-800" },
+    {
+        title: "Votação",
+        icon: Lightbulb,
+        status: "OPEN",
+        color: "bg-blue-200",
+        dotColor: "bg-blue-500",
+        iconColor: "text-blue-800"
+    },
+    {
+        title: "Em Estudo",
+        icon: Microscope,
+        status: "UNDER_REVIEW",
+        color: "bg-purple-200",
+        dotColor: "bg-purple-500",
+        iconColor: "text-purple-800"
+    },
+    {
+        title: "Implementando",
+        icon: Rocket,
+        status: "PLANNED",
+        color: "bg-slate-300",
+        dotColor: "bg-slate-500",
+        iconColor: "text-slate-800"
+    },
+    {
+        title: "Concluído",
+        icon: PartyPopper,
+        status: "IMPLEMENTED",
+        color: "bg-emerald-200",
+        dotColor: "bg-emerald-500",
+        iconColor: "text-emerald-800"
+    },
 ] as const
 
 export function SuggestionPage() {
@@ -115,7 +145,7 @@ export function SuggestionPage() {
                 </div>
 
                 <div
-                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 overflow-x-auto pb-4 h-full min-h-0 auto-cols-fr"
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto pb-4 h-full min-h-0 auto-cols-fr"
                     role="region"
                 >
                     {COLUMN_CONFIG.map((column) => {
