@@ -16,6 +16,7 @@ import { AvailabilityPage } from './pages/app/appointment/availability-page'
 import { SuggestionPage } from './pages/app/suggestion/suggestion-page'
 import { AdminDashboard } from './pages/app/admin/dashboard/admin-dashboard'
 import { AdminSuggestionsPage } from './pages/app/admin/suggestions/suggestions-page'
+import { SuggestionsManagement } from './pages/app/admin/suggestions/suggestions-management'
 
 const getUser = () => {
   const userData = localStorage.getItem('user')
@@ -141,6 +142,15 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      {
+        path: '/menagement-suggestions',
+        element: (
+          <ProtectedRoute allowedRole="SUPER_ADMIN">
+            <SuggestionsManagement />
+          </ProtectedRoute>
+        ),
+      },
+
       { path: '/suggestion', element: <SuggestionPage /> },
     ],
   },

@@ -131,22 +131,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       })
 
       baseNav.push({
-        title: "Plataforma",
-        url: "#",
-        icon: Inbox,
-        items: [
-          { title: "Sugestões Recebidas", url: "admin-suggestions" },
-          { title: "Logs do Sistema", url: "/admin/logs" },
-        ],
-      })
-
-      baseNav.push({
         title: "Financeiro MindFlush",
         url: "#",
         icon: Wallet,
         items: [
           { title: "Assinaturas Ativas", url: "/admin/subscriptions" },
           { title: "Relatório de Repasses", url: "/admin/payouts" },
+        ],
+      })
+
+      baseNav.push({
+        title: "Plataforma",
+        url: "#",
+        icon: Inbox,
+        items: [
+          { title: "Sugestões Recebidas", url: "admin-suggestions" },
+          { title: "Controle de Sugestões", url: "menagement-suggestions" },
         ],
       })
     }

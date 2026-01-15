@@ -26,14 +26,6 @@ export function AdminSuggestionsPage() {
             <Helmet title="Sugestões e Sugestões" />
 
             <div className="flex flex-col gap-8 mt-6">
-                {/* 1. Header de Título */}
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Sugestões da Comunidade</h1>
-                    <p className="text-sm text-muted-foreground">
-                        Gerencie ideias e feedbacks enviados pelos psicólogos.
-                    </p>
-                </div>
-
                 <div>
                     <Card className="bg-blue-600 text-white border-none shadow-md rounded-2xl">
                         <CardHeader>
@@ -51,15 +43,10 @@ export function AdminSuggestionsPage() {
                     </Card>
                 </div>
 
-                {/* 3. Grid Principal (Conteúdo vs Destaques) */}
                 <div className="grid grid-cols-1 gap-6">
-
                     <div className="col-span-12 lg:col-span-8">
                         <PendingSuggestionsModeration />
                     </div>
-
-
-
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">

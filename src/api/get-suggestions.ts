@@ -15,7 +15,7 @@ export interface Suggestion {
 
 interface GetSuggestionsParams {
   category?: string
-  status?: string
+  status?: string | string[] 
   sortBy?: string
   search?: string 
 }
