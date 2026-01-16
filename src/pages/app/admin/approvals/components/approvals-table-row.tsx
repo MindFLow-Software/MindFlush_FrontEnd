@@ -10,7 +10,7 @@ import { TableCell, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog } from "@/components/ui/dialog"
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
-import { approvePsychologist } from "@/api/approvals"
+import { approvePsychologist, rejectPsychologist } from "@/api/approvals" // Importado reject
 import { formatAGE } from "@/utils/formatAGE"
 import { ApprovalsDetailsDialog } from "./approvals-details-dialog"
 
@@ -30,8 +30,7 @@ export function ApprovalsTableRow({ psychologist }: { psychologist: any }) {
         if (diffInHours < 24) {
             return {
                 label: diffInHours < 1 ? "Agora" : `${diffInHours} Horas`,
-                classes:
-                    "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-400",
+                classes: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-400",
                 dot: "bg-emerald-500",
             }
         }
@@ -55,10 +54,21 @@ export function ApprovalsTableRow({ psychologist }: { psychologist: any }) {
         mutationFn: approvePsychologist,
         onSuccess: () => {
             toast.success("Psicólogo aprovado com sucesso!")
-            queryClient.invalidateQueries({ queryKey: ["pending-approvals"] })
+            queryClient.invalidateQueries({ queryKey: ["admin", "pending-approvals"] })
             setIsDetailsOpen(false)
         },
     })
+
+    const { mutateAsync: rejectMutation, isPending: isRejecting } = useMutation({
+        mutationFn: rejectPsychologist,
+        onSuccess: () => {
+            toast.success("Solicitação rejeitada.")
+            queryClient.invalidateQueries({ queryKey: ["admin", "pending-approvals"] })
+            setIsDetailsOpen(false)
+        },
+    })
+
+    const isWorking = isApproving || isRejecting
 
     return (
         <TableRow className="group hover:bg-muted/50 transition-all duration-200 border-l-2 border-l-transparent hover:border-l-primary/50">
@@ -149,8 +159,9 @@ export function ApprovalsTableRow({ psychologist }: { psychologist: any }) {
                                 <Button
                                     size="sm"
                                     variant="outline"
+                                    disabled={isWorking}
                                     className="cursor-pointer h-8 w-8 p-0 rounded-lg border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 dark:border-red-800 dark:hover:bg-red-950 bg-transparent"
-                                    onClick={() => { }}
+                                    onClick={() => rejectMutation(psychologist.id)}
                                 >
                                     <X className="h-4 w-4" />
                                 </Button>
@@ -161,7 +172,7 @@ export function ApprovalsTableRow({ psychologist }: { psychologist: any }) {
 
                     <Button
                         size="sm"
-                        disabled={isApproving}
+                        disabled={isWorking}
                         className="cursor-pointer h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all hover:shadow-md disabled:opacity-50"
                         onClick={() => approveMutation(psychologist.id)}
                     >
