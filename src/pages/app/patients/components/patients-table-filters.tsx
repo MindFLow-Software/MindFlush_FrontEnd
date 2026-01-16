@@ -144,7 +144,7 @@ export function PatientsTableFilters({ onPatientRegistered }: PatientsTableFilte
             className="cursor-pointer gap-2 w-full lg:w-auto shrink-0 bg-blue-600 hover:bg-blue-700 shadow-sm transition-all"
           >
             <QrCode className="h-4 w-4" />
-            QrCode de Registro
+            QrCode de Cadastro
           </Button>
         </div>
 
