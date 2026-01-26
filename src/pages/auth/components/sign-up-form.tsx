@@ -8,8 +8,8 @@ import { z } from "zod"
 import { useNavigate } from "react-router-dom"
 import { useMutation } from "@tanstack/react-query"
 import { ChevronDownIcon, Eye, EyeOff } from "lucide-react"
+import { IMaskMixin } from "react-imask"
 import { cn } from "@/lib/utils"
-
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -25,17 +25,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-
 import {
   Field,
   FieldGroup,
   FieldLabel,
   FieldDescription,
 } from "@/components/ui/field"
-
 import { registerPsychologist } from "@/api/create-user"
-import { formatCPF } from "@/utils/formatCPF"
-import { formatPhone } from "@/utils/formatPhone"
+
+const MaskedInput = IMaskMixin(({ inputRef, ...props }: any) => (
+  <Input ref={inputRef} {...props} />
+))
 
 export const signUpFormSchema = z.object({
   firstName: z.string().min(1, "Primeiro nome é obrigatório"),
@@ -77,8 +77,6 @@ export function SignUpForm({
     register,
     handleSubmit,
     control,
-    setValue,
-    watch,
     formState: { isSubmitting },
   } = useForm<SignUpFormData>({
     resolver: zodResolver(signUpFormSchema),
@@ -108,8 +106,6 @@ export function SignUpForm({
     }
   }
 
-  const phoneValue = watch("phoneNumber")
-  const cpfValue = watch("cpf")
 
   return (
     <form
@@ -158,26 +154,39 @@ export function SignUpForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field>
             <FieldLabel htmlFor="phoneNumber">Telefone</FieldLabel>
-            <Input
-              id="phoneNumber"
-              value={formatPhone(phoneValue || "")}
-              onChange={(e) => setValue("phoneNumber", e.target.value)}
-              placeholder="(99) 99999-9999"
-              maxLength={15}
+            <Controller
+              control={control}
+              name="phoneNumber"
+              render={({ field: { ref, ...fieldProps } }) => (
+                <MaskedInput
+                  {...fieldProps}
+                  inputRef={ref}
+                  mask="(00) 00000-0000"
+                  placeholder="(99) 99999-9999"
+                  id="phoneNumber"
+                />
+              )}
             />
           </Field>
 
           <Field>
             <FieldLabel htmlFor="cpf">CPF</FieldLabel>
-            <Input
-              id="cpf"
-              value={formatCPF(cpfValue || "")}
-              onChange={(e) => setValue("cpf", e.target.value)}
-              placeholder="123.456.789-00"
-              maxLength={14}
+            <Controller
+              control={control}
+              name="cpf"
+              render={({ field: { ref, ...fieldProps } }) => (
+                <MaskedInput
+                  {...fieldProps}
+                  inputRef={ref}
+                  mask="000.000.000-00"
+                  placeholder="123.456.789-00"
+                  id="cpf"
+                />
+              )}
             />
           </Field>
         </div>
+
         <Field>
           <FieldLabel>Data de Nascimento</FieldLabel>
           <Controller

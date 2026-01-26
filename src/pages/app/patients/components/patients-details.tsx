@@ -3,16 +3,17 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Loader2, ClockIcon, Eye } from "lucide-react"
+import { format, parseISO } from "date-fns"
+import { ptBR } from "date-fns/locale"
 import { getPatientDetails } from "@/api/get-patient-details"
 import { usePsychologistProfile } from "@/hooks/use-psychologist-profile"
+import { IMaskMixin } from "react-imask"
 
 import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Item, ItemActions, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { Button } from "@/components/ui/button"
 
-import { formatCPF } from "@/utils/formatCPF"
-import { formatPhone } from "@/utils/formatPhone"
 import { PaginationDetailsPatients } from "@/components/pagination-details-patients"
 import { EvolutionViewer } from "../docs/evolution-viewer"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -20,6 +21,15 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 interface PatientsDetailsProps {
     patientId: string
 }
+
+const MaskedInfo = IMaskMixin(({ inputRef, ...props }: any) => (
+    <input
+        ref={inputRef}
+        disabled
+        className="bg-transparent border-none w-full text-right p-0 pointer-events-none font-medium tabular-nums focus:outline-none disabled:opacity-100 text-foreground h-auto"
+        {...props}
+    />
+))
 
 export function PatientsDetails({ patientId }: PatientsDetailsProps) {
     const [pageIndex, setPageIndex] = useState(0)
@@ -72,7 +82,7 @@ export function PatientsDetails({ patientId }: PatientsDetailsProps) {
             <DialogHeader className={selectedSession ? "sr-only" : ""}>
                 <DialogTitle>
                     {selectedSession
-                        ? `Evolução - ${selectedSession.date}`
+                        ? `Evolução - ${format(parseISO(selectedSession.date), "dd/MM/yyyy", { locale: ptBR })}`
                         : `Paciente: ${patient.firstName} ${patient.lastName}`}
                 </DialogTitle>
                 <DialogDescription>
@@ -109,7 +119,10 @@ export function PatientsDetails({ patientId }: PatientsDetailsProps) {
                             <TableRow>
                                 <TableCell className="text-muted-foreground">CPF</TableCell>
                                 <TableCell className="flex justify-end font-medium tabular-nums">
-                                    {formatCPF(patient.cpf)}
+                                    <MaskedInfo
+                                        mask="000.000.000-00"
+                                        value={patient.cpf}
+                                    />
                                 </TableCell>
                             </TableRow>
                             <TableRow>
@@ -121,7 +134,10 @@ export function PatientsDetails({ patientId }: PatientsDetailsProps) {
                             <TableRow>
                                 <TableCell className="text-muted-foreground">Telefone</TableCell>
                                 <TableCell className="flex justify-end font-medium tabular-nums">
-                                    {formatPhone(patient.phoneNumber)}
+                                    <MaskedInfo
+                                        mask="(00) 00000-0000"
+                                        value={patient.phoneNumber}
+                                    />
                                 </TableCell>
                             </TableRow>
                         </TableBody>
@@ -168,10 +184,11 @@ export function PatientsDetails({ patientId }: PatientsDetailsProps) {
                                         const statusInfo = getStatusLabel(session.status)
                                         const s = session.status?.toUpperCase()
                                         const isFinished = s === "FINISHED" || s === "CONCLUÍDA" || s === "CONCLUIDO"
+                                        const formattedDate = format(parseISO(session.date), "dd/MM/yyyy - HH:mm", { locale: ptBR })
 
                                         return (
                                             <TableRow key={session.id}>
-                                                <TableCell className="whitespace-nowrap">{session.date}</TableCell>
+                                                <TableCell className="whitespace-nowrap tabular-nums">{formattedDate}</TableCell>
                                                 <TableCell className="max-w-[200px] truncate italic text-muted-foreground">
                                                     {session.theme || "Sem tema definido"}
                                                 </TableCell>

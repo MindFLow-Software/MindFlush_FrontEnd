@@ -6,6 +6,7 @@ import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { CalendarIcon, Loader2, Eye, EyeOff, Venus, Mars, Users } from "lucide-react"
 import { toast } from "sonner"
+import { IMaskMixin } from "react-imask"
 import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -35,6 +36,10 @@ interface EditPatientProps {
     patient: UpdatePatientData
     onClose?: () => void
 }
+
+const MaskedInput = IMaskMixin(({ inputRef, ...props }: any) => (
+    <Input ref={inputRef} {...props} />
+))
 
 export function EditPatient({ patient, onClose }: EditPatientProps) {
     const queryClient = useQueryClient()
@@ -87,7 +92,7 @@ export function EditPatient({ patient, onClose }: EditPatientProps) {
                 profileImageUrl = res.data.url
             }
 
-            const attachmentIds = selectedFiles.length > 0 
+            const attachmentIds = selectedFiles.length > 0
                 ? await Promise.all(selectedFiles.map(async (file) => {
                     const data = new FormData()
                     data.append('file', file)
@@ -140,7 +145,14 @@ export function EditPatient({ patient, onClose }: EditPatientProps) {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="cpf" className={cn(errors.cpf && "text-red-500")}>CPF *</Label>
-                            <Input id="cpf" name="cpf" maxLength={14} value={cpf} onChange={(e) => setCpf(formatCPF(e.target.value))} className={cn(errors.cpf && "border-red-500")} />
+                            <MaskedInput
+                                id="cpf"
+                                name="cpf"
+                                mask="000.000.000-00"
+                                value={cpf}
+                                onAccept={(val: string) => setCpf(val)}
+                                className={cn(errors.cpf && "border-red-500")}
+                            />
                         </div>
                         <div className="space-y-2">
                             <Label className={cn(errors.dateOfBirth && "text-red-500")}>Data de Nascimento *</Label>
@@ -164,7 +176,14 @@ export function EditPatient({ patient, onClose }: EditPatientProps) {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="phoneNumber" className={cn(errors.phoneNumber && "text-red-500")}>Telefone *</Label>
-                            <Input id="phoneNumber" name="phoneNumber" value={phone} maxLength={15} onChange={(e) => setPhone(formatPhone(e.target.value))} className={cn(errors.phoneNumber && "border-red-500")} />
+                            <MaskedInput
+                                id="phoneNumber"
+                                name="phoneNumber"
+                                mask="(00) 00000-0000"
+                                value={phone}
+                                onAccept={(val: string) => setPhone(val)}
+                                className={cn(errors.phoneNumber && "border-red-500")}
+                            />
                         </div>
                         <div className="space-y-2">
                             <Label>Gênero</Label>

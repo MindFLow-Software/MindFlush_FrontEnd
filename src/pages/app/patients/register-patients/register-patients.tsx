@@ -7,7 +7,7 @@ import { ptBR } from "date-fns/locale"
 import { Loader2, CalendarIcon, Eye, EyeOff, Venus, Mars, Users, ShieldCheck, Contact } from "lucide-react"
 import { toast } from "sonner"
 import { AxiosError } from "axios"
-
+import { IMaskMixin } from "react-imask"
 import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -15,10 +15,8 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { formatCPF } from "@/utils/formatCPF"
-import { formatPhone } from "@/utils/formatPhone"
 import { registerPatients } from "@/api/create-patients"
-import { uploadAttachment } from "@/api/attachments" // 🟢 Importação da sua API
+import { uploadAttachment } from "@/api/attachments"
 import { cn } from "@/lib/utils"
 import { UploadZone } from "./upload-zone"
 import { PatientAvatarUpload } from "./patient-avatar-upload"
@@ -36,6 +34,10 @@ interface FormErrors {
 interface RegisterPatientsProps {
     onSuccess?: () => void
 }
+
+const MaskedInput = IMaskMixin(({ inputRef, ...props }: any) => (
+    <Input ref={inputRef} {...props} />
+))
 
 export function RegisterPatients({ onSuccess }: RegisterPatientsProps) {
     const queryClient = useQueryClient()
@@ -102,14 +104,12 @@ export function RegisterPatients({ onSuccess }: RegisterPatientsProps) {
 
             let profileImageUrl = undefined
             if (avatarFile) {
-                // 🟢 Utilizando a função de API centralizada
                 const response = await uploadAttachment(avatarFile)
                 profileImageUrl = response.url
             }
 
             let attachmentIds: string[] = []
             if (selectedFiles.length > 0) {
-                // 🟢 Utilizando a função de API centralizada em loop
                 attachmentIds = await Promise.all(
                     selectedFiles.map(async (file) => {
                         const response = await uploadAttachment(file)
@@ -192,13 +192,13 @@ export function RegisterPatients({ onSuccess }: RegisterPatientsProps) {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="cpf" className={cn(errors.cpf && "text-red-500")}>CPF *</Label>
-                            <Input
+                            <MaskedInput
                                 id="cpf"
                                 name="cpf"
+                                mask="000.000.000-00"
                                 placeholder="000.000.000-00"
                                 value={cpf}
-                                maxLength={14}
-                                onChange={(e) => setCpf(formatCPF(e.target.value))}
+                                onAccept={(value: string) => setCpf(value)}
                                 aria-invalid={errors.cpf}
                                 className={cn(errors.cpf && "border-red-500 focus-visible:ring-red-500")}
                             />
@@ -244,15 +244,15 @@ export function RegisterPatients({ onSuccess }: RegisterPatientsProps) {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="phoneNumber" className={cn(errors.phoneNumber && "text-red-500")}>Celular / WhatsApp *</Label>
-                            <Input
+                            <MaskedInput
                                 id="phoneNumber"
                                 name="phoneNumber"
+                                mask="(00) 00000-0000"
                                 type="tel"
                                 autoComplete="tel"
                                 placeholder="(00) 00000-0000"
                                 value={phone}
-                                maxLength={15}
-                                onChange={(e) => setPhone(formatPhone(e.target.value))}
+                                onAccept={(value: string) => setPhone(value)}
                                 aria-invalid={errors.phoneNumber}
                                 className={cn(errors.phoneNumber && "border-red-500 focus-visible:ring-red-500")}
                             />
