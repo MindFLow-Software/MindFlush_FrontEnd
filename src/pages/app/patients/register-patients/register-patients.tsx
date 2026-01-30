@@ -46,8 +46,12 @@ function isValidCPF(cpf: string): boolean {
 }
 
 const patientSchema = z.object({
-    firstName: z.string().min(1, "Obrigatório"),
-    lastName: z.string().min(1, "Obrigatório"),
+    firstName: z.string()
+        .min(1, "Obrigatório")
+        .regex(/^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/, "Apenas letras são permitidas"),
+    lastName: z.string()
+        .min(1, "Obrigatório")
+        .regex(/^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/, "Apenas letras são permitidas"),
     phoneNumber: z.string().optional(),
     dateOfBirth: z.date()
         .nullable()
@@ -135,9 +139,9 @@ export function RegisterPatients({ patient, onSuccess }: RegisterPatientsProps) 
             await savePatientFn({
                 ...data,
                 id: patient?.id,
-                phoneNumber: data.phoneNumber || undefined,
+                phoneNumber: data.phoneNumber ? data.phoneNumber.replace(/\D/g, "") : undefined,
                 dateOfBirth: data.dateOfBirth || undefined,
-                cpf: data.cpf || undefined,
+                cpf: data.cpf ? data.cpf.replace(/\D/g, "") : undefined,
                 gender: data.gender as any,
                 role: "PATIENT" as any,
                 isActive: true,
@@ -196,6 +200,7 @@ export function RegisterPatients({ patient, onSuccess }: RegisterPatientsProps) 
                                     autoComplete="given-name"
                                     className={cn(errors.firstName && "border-red-500 focus-visible:ring-red-500")}
                                 />
+                                {errors.firstName && <p role="alert" className="text-[10px] text-red-500 font-bold uppercase mt-1">{errors.firstName.message}</p>}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="lastName" className={cn(errors.lastName && "text-red-500")}>Sobrenome *</Label>
@@ -206,6 +211,7 @@ export function RegisterPatients({ patient, onSuccess }: RegisterPatientsProps) 
                                     autoComplete="family-name"
                                     className={cn(errors.lastName && "border-red-500 focus-visible:ring-red-500")}
                                 />
+                                {errors.lastName && <p role="alert" className="text-[10px] text-red-500 font-bold uppercase mt-1">{errors.lastName.message}</p>}
                             </div>
                         </div>
                     </fieldset>
@@ -222,15 +228,17 @@ export function RegisterPatients({ patient, onSuccess }: RegisterPatientsProps) 
                             <Controller
                                 name="cpf"
                                 control={control}
-                                render={({ field: { ref, ...f } }) => (
+                                render={({ field: { ref, onChange, value, ...f } }) => (
                                     <MaskedInput
                                         {...f}
                                         id="cpf"
                                         inputRef={ref}
+                                        value={value}
+                                        onAccept={(v: string) => onChange(v)}
                                         mask="000.000.000-00"
                                         placeholder="000.000.000-00"
                                         spellCheck={false}
-                                        className={cn("font-variant-numeric: tabular-nums", errors.cpf && "border-red-500 focus-visible:ring-red-500")}
+                                        className={cn("tabular-nums", errors.cpf && "border-red-500 focus-visible:ring-red-500")}
                                     />
                                 )}
                             />
@@ -242,16 +250,18 @@ export function RegisterPatients({ patient, onSuccess }: RegisterPatientsProps) 
                             <Controller
                                 name="phoneNumber"
                                 control={control}
-                                render={({ field: { ref, ...f } }) => (
+                                render={({ field: { ref, onChange, value, ...f } }) => (
                                     <MaskedInput
                                         {...f}
                                         id="phoneNumber"
                                         inputRef={ref}
+                                        value={value}
+                                        onAccept={(v: string) => onChange(v)}
                                         mask="(00) 00000-0000"
                                         placeholder="(00) 00000-0000"
                                         type="tel"
-                                        autocomplete="tel"
-                                        className="font-variant-numeric: tabular-nums"
+                                        autoComplete="tel"
+                                        className="tabular-nums"
                                     />
                                 )}
                             />
@@ -287,7 +297,7 @@ export function RegisterPatients({ patient, onSuccess }: RegisterPatientsProps) 
                                                     maxLength={10}
                                                     autoComplete="off"
                                                     spellCheck={false}
-                                                    className={cn("pr-10 font-variant-numeric: tabular-nums", errors.dateOfBirth && "border-red-500 focus-visible:ring-red-500")}
+                                                    className={cn("pr-10 tabular-nums", errors.dateOfBirth && "border-red-500 focus-visible:ring-red-500")}
                                                 />
                                                 <PopoverTrigger asChild>
                                                     <button
