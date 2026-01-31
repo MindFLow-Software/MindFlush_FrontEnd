@@ -192,7 +192,8 @@ export function RegisterAppointment({ initialDate, onSuccess }: RegisterAppointm
                         Paciente
                     </Label>
                     <Select value={selectedPatient} onValueChange={setSelectedPatient}>
-                        <SelectTrigger id="patient" className="h-11 w-full">
+                        {/* Cursor pointer no gatilho do select */}
+                        <SelectTrigger id="patient" className="h-11 w-full cursor-pointer">
                             <SelectValue placeholder={isLoadingPatients ? "Carregando..." : "Selecione o paciente"} />
                         </SelectTrigger>
                         <SelectContent className="max-h-[280px]">
@@ -202,6 +203,7 @@ export function RegisterAppointment({ initialDate, onSuccess }: RegisterAppointm
                                 </div>
                             ) : patients.length > 0 ? (
                                 patients.map((p) => (
+                                    /* Cursor pointer nos itens do select */
                                     <SelectItem key={p.id} value={p.id} className="cursor-pointer">
                                         {p.name}
                                     </SelectItem>
@@ -235,8 +237,9 @@ export function RegisterAppointment({ initialDate, onSuccess }: RegisterAppointm
                             Data
                         </Label>
                         <Popover>
+                            {/* Cursor pointer no botão que abre o calendário */}
                             <PopoverTrigger asChild>
-                                <Button variant="outline" className="h-11 w-full justify-start font-normal bg-transparent">
+                                <Button variant="outline" className="h-11 w-full justify-start font-normal bg-transparent cursor-pointer">
                                     {date ? format(date, "dd 'de' MMMM, yyyy", { locale: ptBR }) : <span>Selecione a data</span>}
                                 </Button>
                             </PopoverTrigger>
@@ -258,7 +261,8 @@ export function RegisterAppointment({ initialDate, onSuccess }: RegisterAppointm
                             <Clock className="h-4 w-4 text-muted-foreground" />
                             Horário
                         </Label>
-                        <Input id="time" type="time" value={time} onChange={handleTimeChange} className="h-11" />
+                        {/* Cursor pointer no input de hora nativo */}
+                        <Input id="time" type="time" value={time} onChange={handleTimeChange} className="h-11 cursor-pointer" />
                     </div>
                 </div>
 
@@ -282,7 +286,8 @@ export function RegisterAppointment({ initialDate, onSuccess }: RegisterAppointm
                 </div>
 
                 <div className="pt-3">
-                    <Button type="submit" className="h-11 w-full font-medium" disabled={isPending || !isFormValid}>
+                    {/* Cursor pointer no botão de submissão */}
+                    <Button type="submit" className="h-11 w-full font-medium cursor-pointer" disabled={isPending || !isFormValid}>
                         {isPending ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

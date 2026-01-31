@@ -3,8 +3,8 @@
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { EditAppointment } from "./edit-appointment-dialog"
 import { RegisterAppointment } from "./register-appointment"
-import { RescheduleAppointmentDialog } from "./reschedule-appointment-dialog"
 import { CancelAppointmentDialog } from "./cancel-appointment-dialog"
+import { RescheduleAppointmentDialog } from "./reschedule-appointment-dialog"
 
 interface AppointmentDialogManagerProps {
     states: {

@@ -44,7 +44,7 @@ export function AvailabilityPage() {
         <>
             <Helmet title="Horários de Atendimento" />
 
-            <div className="flex flex-col gap-8 p-4 lg:p-8 max-w-[1000px] mx-auto min-h-full transition-colors">
+            <div className="flex flex-col gap-5 mt-6 px-2 pb-8">
                 <header className="flex flex-col gap-2">
                     <div className="flex items-center gap-3">
                         <CalendarClock className="w-8 h-8 text-primary" />

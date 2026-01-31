@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { AvailabilityDayRow } from './availability-day-row'
 import { api } from '@/lib/axios'
 import { toast } from 'sonner'
+import { AvailabilityDayRow } from './availability-day-row'
 
 interface ScheduleManagerProps {
     defaultData: {

@@ -25,6 +25,14 @@ export interface Appointment {
     firstName: string
     lastName: string
   } | null
+  
+  // 🟢 Campos adicionados para compatibilidade com o Calendário (Frontend)
+  start?: Date
+  end?: Date
+  title?: string
+  
+  // 🟢 Assinatura de índice para permitir propriedades dinâmicas exigidas pelo Big Calendar
+  [key: string]: any
 }
 
 export interface GetAppointmentsRequest {
