@@ -65,7 +65,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           icon: Users2,
           items: [
             { title: "Cadastro de Pacientes", url: "/patients-list" },
-            { title: "Docs de Pacientes", url: "/patients-list" },
+            { title: "Docs de Pacientes", url: "/patients-docs" },
           ],
         },
         {

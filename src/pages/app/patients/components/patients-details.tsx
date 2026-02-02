@@ -15,7 +15,7 @@ import { Item, ItemActions, ItemContent, ItemMedia, ItemTitle } from "@/componen
 import { Button } from "@/components/ui/button"
 
 import { PaginationDetailsPatients } from "@/components/pagination-details-patients"
-import { EvolutionViewer } from "../docs/evolution-viewer"
+import { EvolutionViewer } from "./evolution-viewer"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface PatientsDetailsProps {
