@@ -9,16 +9,12 @@ import { PatientsTableFilters } from "./components/patients-table-filters"
 import { PatientsTable } from "./components/patients-table"
 
 import { useHeaderStore } from "@/hooks/use-header-store"
-import { usePatientAchievements } from "@/hooks/use-patient-achievements"
 import { usePatientFilters } from "@/hooks/use-patient-filters"
 import { getPatients } from "@/api/get-patients"
 
 export function PatientsList() {
     const { setTitle } = useHeaderStore()
-
     const { filters, setPage } = usePatientFilters()
-
-    const { checkAchievement } = usePatientAchievements()
 
     useEffect(() => {
         setTitle('Cadastro de Pacientes')
@@ -62,7 +58,7 @@ export function PatientsList() {
             <Helmet title="Cadastro de Pacientes" />
 
             <div className="flex flex-col gap-5 mt-6">
-                <PatientsTableFilters onPatientRegistered={checkAchievement} />
+                <PatientsTableFilters />
 
                 <PatientsTable
                     patients={patients}
