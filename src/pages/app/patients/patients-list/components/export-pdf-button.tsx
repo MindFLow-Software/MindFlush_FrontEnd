@@ -5,7 +5,7 @@ import { pdf } from '@react-pdf/renderer'
 import { FileDown, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import { SessionPDFTemplate } from '../../../../utils/session-pdf-template'
+import { SessionPDFTemplate } from '@/utils/session-pdf-template'
 
 interface ExportButtonProps {
     appointment: any // Tipagem do seu Appointment

@@ -22,12 +22,12 @@ import { Label } from "@/components/ui/label"
 
 import { registerPatients } from "@/api/create-patients"
 import { updatePatients } from "@/api/upadate-patient"
-import { uploadAttachment } from "@/api/attachments"
 import { cn } from "@/lib/utils"
 
 import { UploadZone } from "./upload-zone"
 import { PatientAvatarUpload } from "./patient-avatar-upload"
 import { AttachmentsList } from "./attachments-list"
+import { uploadAttachment } from "@/api/attachments"
 
 function isValidCPF(cpf: string): boolean {
     const cleanCPF = cpf.replace(/\D/g, "")
@@ -120,23 +120,7 @@ export function RegisterPatients({ patient, onSuccess }: RegisterPatientsProps) 
         try {
             setIsUploading(true)
 
-            let profileImageUrl = patient?.profileImageUrl
-            if (avatarFile) {
-                const response = await uploadAttachment(avatarFile)
-                profileImageUrl = response.url
-            }
-
-            let attachmentIds: string[] = []
-            if (selectedFiles.length > 0) {
-                attachmentIds = await Promise.all(
-                    selectedFiles.map(async (file) => {
-                        const response = await uploadAttachment(file)
-                        return response.attachmentId
-                    })
-                )
-            }
-
-            await savePatientFn({
+            const patientResponse = await savePatientFn({
                 ...data,
                 id: patient?.id,
                 phoneNumber: data.phoneNumber ? data.phoneNumber.replace(/\D/g, "") : undefined,
@@ -146,9 +130,19 @@ export function RegisterPatients({ patient, onSuccess }: RegisterPatientsProps) 
                 role: "PATIENT" as any,
                 isActive: true,
                 expertise: "OTHER" as any,
-                profileImageUrl,
-                attachmentIds: attachmentIds.length > 0 ? attachmentIds : undefined,
             })
+
+            const targetId = isEditMode ? patient.id : patientResponse.id
+
+            if (avatarFile) {
+                await uploadAttachment(avatarFile, targetId)
+            }
+
+            if (selectedFiles.length > 0) {
+                await Promise.all(
+                    selectedFiles.map((file) => uploadAttachment(file, targetId))
+                )
+            }
 
             if (!isEditMode) {
                 reset()
@@ -378,7 +372,6 @@ export function RegisterPatients({ patient, onSuccess }: RegisterPatientsProps) 
 
                 <div className="flex justify-end pt-4 border-t">
                     <Button
-
                         type="submit"
                         disabled={isPending || isUploading}
                         className="cursor-pointer gap-2 w-full lg:w-auto shrink-0 bg-blue-600 hover:bg-blue-700 shadow-sm transition-all"
