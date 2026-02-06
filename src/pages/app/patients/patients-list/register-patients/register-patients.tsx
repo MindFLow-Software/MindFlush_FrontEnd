@@ -101,12 +101,6 @@ export function RegisterPatients({ patient, onSuccess }: RegisterPatientsProps) 
 
     const { mutateAsync: savePatientFn, isPending } = useMutation({
         mutationFn: (data: any) => isEditMode ? updatePatients(data) : registerPatients(data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["patients"] })
-            queryClient.invalidateQueries({ queryKey: ["attachments", patient?.id] })
-            toast.success(isEditMode ? "Prontuário atualizado!" : "Paciente cadastrado com sucesso!")
-            onSuccess?.()
-        },
         onError: (err) => {
             let errorMessage = "Erro ao processar solicitação."
             if (err instanceof AxiosError && err.response) {
@@ -132,17 +126,27 @@ export function RegisterPatients({ patient, onSuccess }: RegisterPatientsProps) 
                 expertise: "OTHER" as any,
             })
 
-            const targetId = isEditMode ? patient.id : patientResponse.id
+            const targetId = isEditMode ? patient.id : (patientResponse.id || patientResponse.patientId)
 
-            if (avatarFile) {
+            if (avatarFile && targetId) {
                 await uploadAttachment(avatarFile, targetId)
             }
 
-            if (selectedFiles.length > 0) {
+            if (selectedFiles.length > 0 && targetId) {
                 await Promise.all(
                     selectedFiles.map((file) => uploadAttachment(file, targetId))
                 )
             }
+
+            await queryClient.invalidateQueries({ queryKey: ["patients"] })
+
+            if (targetId) {
+                await queryClient.invalidateQueries({ queryKey: ["patient", targetId] })
+                await queryClient.invalidateQueries({ queryKey: ["attachments", targetId] })
+            }
+
+            toast.success(isEditMode ? "Prontuário atualizado!" : "Paciente cadastrado com sucesso!")
+            onSuccess?.()
 
             if (!isEditMode) {
                 reset()

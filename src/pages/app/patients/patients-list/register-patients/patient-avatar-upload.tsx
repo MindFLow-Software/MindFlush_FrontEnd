@@ -1,61 +1,96 @@
 "use client"
 
-import { useRef, useState, useEffect } from "react"
-import { Camera, Upload } from "lucide-react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useState, useRef, useEffect } from "react"
+import { User, Camera, Loader2 } from "lucide-react"
+import { api } from "@/lib/axios"
 
 interface PatientAvatarUploadProps {
-    defaultValue?: string | null
     onFileSelect: (file: File | null) => void
+    defaultValue?: string | null
 }
 
-export function PatientAvatarUpload({
-    defaultValue,
-    onFileSelect
-}: PatientAvatarUploadProps) {
+export function PatientAvatarUpload({ onFileSelect, defaultValue }: PatientAvatarUploadProps) {
+    const [preview, setPreview] = useState<string | null>(null)
+    const [isLoading, setIsLoading] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
-    const [previewImage, setPreviewImage] = useState<string | null>(defaultValue || null)
 
     useEffect(() => {
-        if (defaultValue) setPreviewImage(defaultValue)
+        async function fetchCurrentImage() {
+            if (!defaultValue) {
+                setPreview(null)
+                return
+            }
+
+            // Se for base64 (preview local), apenas exibe
+            if (defaultValue.startsWith('data:')) {
+                setPreview(defaultValue)
+                return
+            }
+
+            try {
+                setIsLoading(true)
+
+                // 🟢 CORREÇÃO: Se for apenas um ID (UUID), adicionamos o prefixo da rota de attachments
+                // Se o defaultValue já começar com '/', usamos como está.
+                const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(defaultValue)
+                const path = isUuid ? `/attachments/${defaultValue}` : defaultValue
+
+                const response = await api.get(path, {
+                    responseType: 'blob',
+                })
+
+                const objectUrl = URL.createObjectURL(response.data)
+                setPreview(objectUrl)
+
+                return () => URL.revokeObjectURL(objectUrl)
+            } catch (error) {
+                // Se der 404 ou erro, mantemos o preview nulo para mostrar o ícone de User
+                console.error("Erro ao carregar foto do perfil via API:", error)
+                setPreview(null)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+
+        fetchCurrentImage()
     }, [defaultValue])
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
-
         if (file) {
-            const imageUrl = URL.createObjectURL(file)
-            setPreviewImage(imageUrl)
-
             onFileSelect(file)
+            // Para arquivos locais, usamos createObjectURL para performance
+            const objectUrl = URL.createObjectURL(file)
+            setPreview(objectUrl)
         }
     }
 
-    const triggerFileInput = () => {
-        fileInputRef.current?.click()
-    }
-
     return (
-        <div className="flex flex-col items-center justify-center gap-2">
+        <div className="relative group w-24 h-24">
             <div
-                className="relative group cursor-pointer"
-                onClick={triggerFileInput}
+                onClick={() => !isLoading && fileInputRef.current?.click()}
+                className="w-full h-full rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center overflow-hidden cursor-pointer hover:border-blue-500 transition-colors bg-muted/50"
             >
-                <Avatar className="h-24 w-24 border-2 border-dashed border-muted-foreground/30 group-hover:border-primary transition-colors">
-                    <AvatarImage src={previewImage || ""} className="object-cover" />
-                    <AvatarFallback className="bg-muted">
-                        <Camera className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </AvatarFallback>
-                </Avatar>
+                {isLoading ? (
+                    <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+                ) : preview ? (
+                    <img
+                        src={preview}
+                        alt="Foto de perfil"
+                        className="h-full w-full object-cover"
+                        // Fallback caso a URL do objeto falhe
+                        onError={() => setPreview(null)}
+                    />
+                ) : (
+                    <User className="h-10 w-10 text-muted-foreground/40" />
+                )}
 
-                <div className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-1.5 shadow-md group-hover:scale-110 transition-transform">
-                    <Upload className="h-3 w-3" />
-                </div>
+                {!isLoading && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Camera className="h-6 w-6 text-white" />
+                    </div>
+                )}
             </div>
-
-            <span className="text-xs text-muted-foreground">
-                Clique para adicionar foto
-            </span>
 
             <input
                 type="file"
