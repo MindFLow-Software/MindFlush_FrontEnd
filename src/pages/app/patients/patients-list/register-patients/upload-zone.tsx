@@ -1,12 +1,11 @@
 "use client"
 
-import { useRef, memo } from "react"
+import { useRef, memo, useCallback } from "react"
 import { CloudUpload, FileText, Paperclip, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FieldSet } from "@/components/ui/field"
 import {
     Empty,
-    EmptyContent,
     EmptyDescription,
     EmptyHeader,
     EmptyMedia,
@@ -21,37 +20,49 @@ interface UploadZoneProps {
 export const UploadZone = memo(({ selectedFiles, onFilesChange }: UploadZoneProps) => {
     const documentsInputRef = useRef<HTMLInputElement>(null)
 
-    const triggerFileInput = () => documentsInputRef.current?.click()
+    const triggerFileInput = useCallback((e: React.MouseEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        documentsInputRef.current?.click()
+    }, [])
 
     const handleDocumentsSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             const newFiles = Array.from(e.target.files)
-            onFilesChange([...selectedFiles, ...newFiles])
+
+            const filteredNewFiles = newFiles.filter(
+                newFile => !selectedFiles.some(f => f.name === newFile.name && f.size === newFile.size)
+            )
+
+            onFilesChange([...selectedFiles, ...filteredNewFiles])
         }
-        if (e.target) e.target.value = ""
+        // Limpa para permitir re-seleção
+        e.target.value = ""
     }
 
-    const handleRemoveDocument = (indexToRemove: number) => {
-        onFilesChange(selectedFiles.filter((_, index) => index !== indexToRemove))
+    const handleRemoveDocument = (e: React.MouseEvent, indexToRemove: number) => {
+        e.preventDefault()
+        e.stopPropagation()
+        const updatedList = selectedFiles.filter((_, index) => index !== indexToRemove)
+        onFilesChange(updatedList)
     }
 
     return (
         <div className="pt-2 border-t mt-4">
             <div className="flex items-center justify-between mb-2">
-                <legend className="text-sm font-semibold text-foreground flex items-center gap-2 pt-2 w-full ">
-                    <FileText className="size-4 text-blue-500" />
-                    Novos Documentos (Opcional)
+                <legend className="text-[11px] font-bold text-muted-foreground flex items-center gap-2 pt-2 w-full uppercase tracking-wider">
+                    <Paperclip className="size-3 text-blue-500" />
+                    Novos Documentos (PDF, PNG, JPG)
                 </legend>
                 {selectedFiles.length > 0 && (
                     <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         type="button"
                         onClick={triggerFileInput}
-                        className="h-8 text-xs cursor-pointer"
+                        className="h-7 text-[10px] uppercase font-bold text-blue-600 hover:bg-blue-50 cursor-pointer"
                     >
-                        <Paperclip className="w-3 h-3 mr-2" />
-                        Adicionar
+                        + Adicionar mais
                     </Button>
                 )}
             </div>
@@ -65,50 +76,39 @@ export const UploadZone = memo(({ selectedFiles, onFilesChange }: UploadZoneProp
                 onChange={handleDocumentsSelect}
             />
 
-            <FieldSet>
+            <FieldSet className="p-0 border-none shadow-none">
                 {selectedFiles.length === 0 ? (
                     <Empty
-                        className="border border-dashed py-6 mt-1 hover:bg-muted/30 transition-colors cursor-pointer"
+                        className="border-2 border-dashed py-8 mt-1 hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer rounded-xl"
                         onClick={triggerFileInput}
                     >
                         <EmptyHeader>
-                            <EmptyMedia variant="icon">
-                                <CloudUpload className="h-8 w-8 text-muted-foreground/60" />
+                            <EmptyMedia>
+                                <CloudUpload className="h-10 w-10 text-zinc-500/90" />
                             </EmptyMedia>
-                            <EmptyTitle className="text-base font-medium text-foreground text-center">
-                                Sem novos documentos
+                            <EmptyTitle className="text-sm font-semibold text-foreground">
+                                Arraste ou clique para anexar
                             </EmptyTitle>
-                            <EmptyDescription className="text-sm text-center">
-                                Clique para selecionar novos arquivos para o prontuário
+                            <EmptyDescription className="text-xs">
+                                PDFs de exames, laudos ou fotos clínicas
                             </EmptyDescription>
                         </EmptyHeader>
-                        <EmptyContent className="flex justify-center">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); triggerFileInput(); }}
-                                className="cursor-pointer"
-                            >
-                                Selecionar Arquivos
-                            </Button>
-                        </EmptyContent>
                     </Empty>
                 ) : (
-                    <div className="space-y-2 border rounded-md p-2 mt-1 max-h-40 overflow-y-auto">
+                    <div className="grid grid-cols-1 gap-2 mt-1 max-h-48 overflow-y-auto pr-1">
                         {selectedFiles.map((file, index) => (
                             <div
                                 key={`${file.name}-${index}`}
-                                className="flex items-center justify-between p-2 bg-muted/40 rounded-md border text-sm animate-in fade-in slide-in-from-bottom-1"
+                                className="flex items-center justify-between p-3 bg-card rounded-xl border shadow-sm group animate-in fade-in zoom-in-95 duration-200"
                             >
                                 <div className="flex items-center gap-3 overflow-hidden">
-                                    <div className="h-8 w-8 rounded bg-background flex items-center justify-center border shrink-0 text-blue-500">
-                                        <FileText className="h-4 w-4" />
+                                    <div className="h-8 w-8 rounded bg-blue-50 flex items-center justify-center border border-blue-100 shrink-0">
+                                        <FileText className="h-4 w-4 text-blue-600" />
                                     </div>
                                     <div className="flex flex-col min-w-0">
-                                        <span className="font-medium truncate">{file.name}</span>
-                                        <span className="text-xs text-muted-foreground">
-                                            {(file.size / 1024).toFixed(1)} KB
+                                        <span className="text-xs font-bold truncate text-foreground">{file.name}</span>
+                                        <span className="text-[10px] text-muted-foreground uppercase font-medium">
+                                            {(file.size / 1024).toFixed(0)} KB • {file.type.split('/')[1]}
                                         </span>
                                     </div>
                                 </div>
@@ -116,10 +116,10 @@ export const UploadZone = memo(({ selectedFiles, onFilesChange }: UploadZoneProp
                                     variant="ghost"
                                     size="icon"
                                     type="button"
-                                    className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-50 cursor-pointer"
-                                    onClick={() => handleRemoveDocument(index)}
+                                    className="h-7 w-7 rounded-full text-muted-foreground hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                    onClick={(e) => handleRemoveDocument(e, index)}
                                 >
-                                    <X className="h-4 w-4" />
+                                    <X className="h-3.5 w-3.5" />
                                 </Button>
                             </div>
                         ))}

@@ -1,36 +1,29 @@
-import { toast } from "sonner"
+import { api } from "@/lib/axios"
 
-/**
- * Faz o download de um arquivo a partir de uma URL, forçando o download 
- * no navegador e permitindo definir o nome do arquivo final.
- * * @param url - URL pública do arquivo (ex: Cloudflare R2)
- * @param filename - Nome que o arquivo terá ao ser salvo no computador
- */
+export async function handleFileDownload(fileKey: string, filename: string) {
+  try {
+    // 🟢 OBRIGATÓRIO: responseType 'blob' para arquivos binários
+    const response = await api.get(`/attachments/${fileKey}`, {
+      responseType: 'blob', 
+    })
 
-export async function handleFileDownload(url: string, filename: string) {
-    try {
-        const response = await fetch(url)
-        
-        if (!response.ok) throw new Error('Falha ao buscar arquivo')
+    // Cria o arquivo na memória do navegador
+    const blob = new Blob([response.data], { 
+      type: response.headers['content-type'] || 'application/octet-stream' 
+    })
+    
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    
+    link.href = url
+    link.setAttribute('download', filename) // Garante o nome original com acento
+    document.body.appendChild(link)
+    link.click()
 
-        const blob = await response.blob()
-        
-        const blobUrl = window.URL.createObjectURL(blob)
-        
-        const link = document.createElement('a')
-        link.href = blobUrl
-        link.download = filename
-        
-        document.body.appendChild(link)
-        link.click()
-        
-        document.body.removeChild(link)
-        window.URL.revokeObjectURL(blobUrl)
-        
-    } catch (error) {
-        console.error("Erro no download:", error)
-        toast.error("Não foi possível processar o download. Abrindo em nova aba...")
-        
-        window.open(url, '_blank', 'noopener,noreferrer')
-    }
+    // Limpeza necessária
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error("Erro ao processar download:", error)
+  }
 }

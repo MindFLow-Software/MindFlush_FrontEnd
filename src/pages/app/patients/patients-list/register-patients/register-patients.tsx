@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils"
 import { UploadZone } from "./upload-zone"
 import { PatientAvatarUpload } from "./patient-avatar-upload"
 import { AttachmentsList } from "./attachments-list"
-import { uploadAttachment } from "@/api/attachments"
+import { uploadAttachment, uploadAvatar } from "@/api/attachments"
 
 function isValidCPF(cpf: string): boolean {
     const cleanCPF = cpf.replace(/\D/g, "")
@@ -129,7 +129,7 @@ export function RegisterPatients({ patient, onSuccess }: RegisterPatientsProps) 
             const targetId = isEditMode ? patient.id : (patientResponse.id || patientResponse.patientId)
 
             if (avatarFile && targetId) {
-                await uploadAttachment(avatarFile, targetId)
+                await uploadAvatar(avatarFile, targetId)
             }
 
             if (selectedFiles.length > 0 && targetId) {

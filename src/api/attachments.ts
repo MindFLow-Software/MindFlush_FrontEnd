@@ -46,6 +46,20 @@ export async function uploadAttachment(file: File, patientId: string) {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('patientId', patientId)
+  formData.append('type', 'DOCUMENT')
+
+  const response = await api.post("/attachments", formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  
+  return response.data
+}
+
+export async function uploadAvatar(file: File, patientId: string) {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('patientId', patientId)
+  formData.append('type', 'AVATAR')
 
   const response = await api.post("/attachments", formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

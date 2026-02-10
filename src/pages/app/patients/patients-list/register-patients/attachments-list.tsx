@@ -20,83 +20,84 @@ interface AttachmentsListProps {
 export function AttachmentsList({ patientId }: AttachmentsListProps) {
     const queryClient = useQueryClient()
 
-
-
     const { data: attachments, isLoading } = useQuery({
         queryKey: ["attachments", patientId],
-        queryFn: () => getPatientAttachments(patientId)
+        queryFn: () => getPatientAttachments(patientId),
+        // 🟢 Adicionado staleTime para evitar refetch excessivo durante uploads
+        staleTime: 1000 * 60 * 5,
     })
-
-    // src/components/attachments-list.tsx
 
     const { mutateAsync: removeFn, isPending: isRemoving } = useMutation({
         mutationFn: deleteAttachment,
         onSuccess: async () => {
+            // Invalida a query para forçar o refresh da lista
             await queryClient.invalidateQueries({
                 queryKey: ["attachments", patientId],
-                exact: true
             })
-
             toast.success("Documento removido.")
         },
         onError: () => {
-            toast.error("Erro ao sincronizar exclusão com o servidor.")
+            toast.error("Erro ao excluir o arquivo.")
         }
     })
 
     return (
-        <div className="pt-2 border-t mt-4">
+        <div className="pt-2">
             <div className="flex items-center mb-3 px-1">
-                <Label className="block font-medium">
-                    Documentos do Paciente
+                <Label className="block font-bold text-xs uppercase tracking-wider text-muted-foreground">
+                    Documentos e Anexos ({attachments?.length || 0})
                 </Label>
             </div>
 
             <FieldSet className="border-none p-0 shadow-none">
                 {isLoading ? (
                     <div className="flex items-center justify-center py-10">
-                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/50" />
+                        <Loader2 className="h-5 w-5 animate-spin text-blue-500/50" />
                     </div>
-                ) : attachments?.length === 0 ? (
-                    <Empty className="py-6 border-none bg-transparent">
+                ) : !attachments || attachments.length === 0 ? (
+                    <Empty className="py-10 border-none bg-muted/10 rounded-xl">
                         <EmptyHeader className="flex flex-col items-center">
                             <EmptyMedia className="opacity-20 mb-2">
-                                <FileText className="h-8 w-8" />
+                                <FileText className="h-10 w-10" />
                             </EmptyMedia>
-                            <EmptyTitle className="text-xs font-normal text-muted-foreground text-center">
-                                Nenhum registro anexado
+                            <EmptyTitle className="text-xs font-medium text-muted-foreground text-center">
+                                Nenhum documento encontrado para este paciente.
                             </EmptyTitle>
                         </EmptyHeader>
                     </Empty>
                 ) : (
-                    <div className="grid gap-1 max-h-[260px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-muted">
-                        {attachments?.map((file: any) => (
+                    <div className="grid gap-2 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
+                        {attachments.map((file) => (
                             <div
                                 key={file.id}
-                                className="group flex items-center justify-between p-2.5 rounded-xl border border-transparent hover:bg-muted/30 transition-all duration-200"
+                                className="group flex items-center justify-between p-3 rounded-xl border bg-card/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all"
                             >
                                 <div className="flex items-center gap-3 overflow-hidden">
-                                    <div className="h-10 w-10 rounded-full bg-muted/40 flex items-center justify-center shrink-0">
-                                        <FileText className="h-4 w-4 text-muted-foreground/70" />
+                                    <div className="h-9 w-9 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                                        <FileText className="h-4 w-4 text-blue-600" />
                                     </div>
                                     <div className="flex flex-col min-w-0">
-                                        <span className="text-[13px] font-medium text-foreground/80 truncate">
+                                        <span className="text-sm font-semibold text-foreground truncate">
                                             {file.filename}
                                         </span>
-                                        <span className="text-[11px] text-muted-foreground/60">
-                                            {format(new Date(file.uploadedAt), "dd 'de' MMM, yyyy", { locale: ptBR })}
+                                        <span className="text-[10px] text-muted-foreground font-medium uppercase">
+                                            {format(new Date(file.uploadedAt), "dd 'de' MMM, yyyy 'às' HH:mm", { locale: ptBR })}
                                         </span>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex items-center gap-1">
                                     <Button
                                         variant="ghost"
                                         size="icon"
                                         type="button"
-                                        className="cursor-pointer h-8 w-8 rounded-full text-muted-foreground hover:text-blue-600 hover:bg-blue-50"
-                                        onClick={() => handleFileDownload(file.url, file.filename)}
-                                        title="Baixar arquivo"
+                                        className="h-8 w-8 rounded-full hover:bg-blue-100 hover:text-blue-700 cursor-pointer"
+                                        onClick={(e) => {
+                                            e.preventDefault()
+                                            e.stopPropagation()
+
+                                            handleFileDownload(file.id, file.filename)
+                                        }}
                                     >
                                         <ArrowDownToLine className="h-4 w-4" />
                                     </Button>
