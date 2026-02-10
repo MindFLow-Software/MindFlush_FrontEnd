@@ -37,7 +37,6 @@ export function DeleteActionButton({
             await onDelete()
             setOpen(false)
         } catch (error) {
-            // Error handling remains silent as per current implementation
         }
     }
 
@@ -81,7 +80,8 @@ export function DeleteActionButton({
                     </AlertDialogCancel>
                     <AlertDialogAction
                         onClick={handleConfirm}
-                        className="cursor-pointer rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold transition-all"
+                        className="bg-red-500 text-white hover:bg-red-600 rounded-xl
+                        font-bold transition-all cursor-pointer"
                     >
                         {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sim, Excluir"}
                     </AlertDialogAction>

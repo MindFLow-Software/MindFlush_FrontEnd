@@ -1,7 +1,8 @@
 "use client"
 
 import { useRef, memo, useCallback } from "react"
-import { CloudUpload, FileText, Paperclip, X } from "lucide-react"
+import { CloudUpload, FileText, X, AlertCircle, ShieldCheck } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { FieldSet } from "@/components/ui/field"
 import {
@@ -17,44 +18,82 @@ interface UploadZoneProps {
     onFilesChange: (files: File[]) => void
 }
 
+const MAX_FILE_SIZE = 1024 * 1024 * 3 // 3MB
+const MAX_FILES = 6 // 🟢 Limite de segurança solicitado
+
 export const UploadZone = memo(({ selectedFiles, onFilesChange }: UploadZoneProps) => {
     const documentsInputRef = useRef<HTMLInputElement>(null)
 
     const triggerFileInput = useCallback((e: React.MouseEvent) => {
         e.preventDefault()
-        e.stopPropagation()
+        e.stopPropagation() // 🟢 Impede que o clique feche modais externos
         documentsInputRef.current?.click()
     }, [])
 
     const handleDocumentsSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const newFiles = Array.from(e.target.files)
+        const files = e.target.files
+        if (!files || files.length === 0) return
 
-            const filteredNewFiles = newFiles.filter(
-                newFile => !selectedFiles.some(f => f.name === newFile.name && f.size === newFile.size)
-            )
+        const newFiles = Array.from(files)
 
-            onFilesChange([...selectedFiles, ...filteredNewFiles])
+        // 1. Validação de Quantidade Total (Segurança)
+        if (selectedFiles.length + newFiles.length > MAX_FILES) {
+            toast.error("Limite de arquivos excedido", {
+                description: `Você pode ter no máximo ${MAX_FILES} arquivos selecionados.`,
+                icon: <AlertCircle className="size-4 text-red-500" />
+            })
+            e.target.value = "" // Reset do input
+            return
         }
-        // Limpa para permitir re-seleção
+
+        // 2. Filtro de Tamanho (3MB)
+        const oversizedFiles = newFiles.filter(file => file.size > MAX_FILE_SIZE)
+
+        // 3. Filtro de Válidos (Tamanho OK e não duplicados)
+        const validNewFiles = newFiles.filter(newFile => {
+            const isOversized = newFile.size > MAX_FILE_SIZE
+            const isDuplicate = selectedFiles.some(
+                f => f.name === newFile.name && f.size === newFile.size
+            )
+            return !isOversized && !isDuplicate
+        })
+
+        // 4. Notificações de Erro de Tamanho
+        if (oversizedFiles.length > 0) {
+            oversizedFiles.forEach(file => {
+                toast.error(`O arquivo "${file.name}" é muito grande.`, {
+                    description: "O limite por arquivo é de 3MB."
+                })
+            })
+        }
+
+        // 5. Atualização do Estado
+        if (validNewFiles.length > 0) {
+            onFilesChange([...selectedFiles, ...validNewFiles])
+            toast.success(`${validNewFiles.length} arquivo(s) adicionado(s).`)
+        }
+
+        // 🟢 Importante: Resetar o valor para permitir selecionar o mesmo arquivo após deletar
         e.target.value = ""
     }
 
     const handleRemoveDocument = (e: React.MouseEvent, indexToRemove: number) => {
         e.preventDefault()
-        e.stopPropagation()
+        e.stopPropagation() // 🟢 Impede que a remoção dispare ações no Modal pai
+
         const updatedList = selectedFiles.filter((_, index) => index !== indexToRemove)
         onFilesChange(updatedList)
     }
 
     return (
-        <div className="pt-2 border-t mt-4">
-            <div className="flex items-center justify-between mb-2">
+        <div className="pt-2 border-t mt-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-2 px-1">
                 <legend className="text-[11px] font-bold text-muted-foreground flex items-center gap-2 pt-2 w-full uppercase tracking-wider">
-                    <Paperclip className="size-3 text-blue-500" />
-                    Novos Documentos (PDF, PNG, JPG)
+                    <ShieldCheck className="size-3 text-blue-500" />
+                    Novos Documentos (Máx {MAX_FILES} arquivos • 3MB)
                 </legend>
-                {selectedFiles.length > 0 && (
+
+                {selectedFiles.length > 0 && selectedFiles.length < MAX_FILES && (
                     <Button
                         variant="ghost"
                         size="sm"
@@ -87,15 +126,15 @@ export const UploadZone = memo(({ selectedFiles, onFilesChange }: UploadZoneProp
                                 <CloudUpload className="h-10 w-10 text-zinc-500/90" />
                             </EmptyMedia>
                             <EmptyTitle className="text-sm font-semibold text-foreground">
-                                Arraste ou clique para anexar
+                                Clique para anexar arquivos
                             </EmptyTitle>
                             <EmptyDescription className="text-xs">
-                                PDFs de exames, laudos ou fotos clínicas
+                                PDFs ou Imagens (Máximo de {MAX_FILES} arquivos)
                             </EmptyDescription>
                         </EmptyHeader>
                     </Empty>
                 ) : (
-                    <div className="grid grid-cols-1 gap-2 mt-1 max-h-48 overflow-y-auto pr-1">
+                    <div className="grid grid-cols-1 gap-2 mt-1 max-h-48 overflow-y-auto pr-1 scrollbar-thin">
                         {selectedFiles.map((file, index) => (
                             <div
                                 key={`${file.name}-${index}`}
@@ -108,7 +147,7 @@ export const UploadZone = memo(({ selectedFiles, onFilesChange }: UploadZoneProp
                                     <div className="flex flex-col min-w-0">
                                         <span className="text-xs font-bold truncate text-foreground">{file.name}</span>
                                         <span className="text-[10px] text-muted-foreground uppercase font-medium">
-                                            {(file.size / 1024).toFixed(0)} KB • {file.type.split('/')[1]}
+                                            {(file.size / 1024).toFixed(0)} KB • {file.type.split('/')[1] || 'Doc'}
                                         </span>
                                     </div>
                                 </div>

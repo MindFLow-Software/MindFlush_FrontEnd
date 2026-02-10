@@ -101,13 +101,6 @@ export function RegisterPatients({ patient, onSuccess }: RegisterPatientsProps) 
 
     const { mutateAsync: savePatientFn, isPending } = useMutation({
         mutationFn: (data: any) => isEditMode ? updatePatients(data) : registerPatients(data),
-        onError: (err) => {
-            let errorMessage = "Erro ao processar solicitação."
-            if (err instanceof AxiosError && err.response) {
-                errorMessage = err.response.data?.message || "Erro na comunicação com o servidor."
-            }
-            toast.error(errorMessage)
-        }
     })
 
     async function onSubmit(data: PatientFormData) {
@@ -126,35 +119,41 @@ export function RegisterPatients({ patient, onSuccess }: RegisterPatientsProps) 
                 expertise: "OTHER" as any,
             })
 
-            const targetId = isEditMode ? patient.id : (patientResponse.id || patientResponse.patientId)
+            const targetId = isEditMode ? patient.id : (patientResponse?.id || patientResponse?.patientId)
 
-            if (avatarFile && targetId) {
+            if (!targetId) throw new Error("ID não identificado")
+
+            if (avatarFile) {
                 await uploadAvatar(avatarFile, targetId)
             }
 
-            if (selectedFiles.length > 0 && targetId) {
-                await Promise.all(
-                    selectedFiles.map((file) => uploadAttachment(file, targetId))
-                )
+            if(selectedFiles.length > 0) {
+                for (const file of selectedFiles) {
+                    await uploadAttachment(file, targetId)
+                }
             }
 
-            await queryClient.invalidateQueries({ queryKey: ["patients"] })
-
-            if (targetId) {
-                await queryClient.invalidateQueries({ queryKey: ["patient", targetId] })
-                await queryClient.invalidateQueries({ queryKey: ["attachments", targetId] })
-            }
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: ["patients"] }),
+                queryClient.invalidateQueries({ queryKey: ["patient", targetId] }),
+                queryClient.invalidateQueries({ queryKey: ["attachments", targetId] })
+            ])
 
             toast.success(isEditMode ? "Prontuário atualizado!" : "Paciente cadastrado com sucesso!")
+
+            setAvatarFile(null)
+            setSelectedFiles([])
+            if (!isEditMode) reset()
+
             onSuccess?.()
 
-            if (!isEditMode) {
-                reset()
-                setAvatarFile(null)
-                setSelectedFiles([])
-            }
         } catch (error) {
             console.error(error)
+            let errorMessage = "Erro ao salvar. Verifique a conexão e os arquivos."
+            if (error instanceof AxiosError) {
+                errorMessage = error.response?.data?.message || errorMessage
+            }
+            toast.error(errorMessage)
         } finally {
             setIsUploading(false)
         }

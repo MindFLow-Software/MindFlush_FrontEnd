@@ -42,28 +42,22 @@ export async function deleteAttachment(id: string) {
   await api.delete(`/attachments/${id}`)
 }
 
-export async function uploadAttachment(file: File, patientId: string) {
+async function uploadFile(file: File, patientId: string, type: 'DOCUMENT' | 'AVATAR') {
   const formData = new FormData()
-  formData.append('file', file)
+  
   formData.append('patientId', patientId)
-  formData.append('type', 'DOCUMENT')
+  formData.append('type', type)
+  formData.append('file', file)
 
-  const response = await api.post("/attachments", formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
+  const response = await api.post("/attachments", formData)
   
   return response.data
 }
 
-export async function uploadAvatar(file: File, patientId: string) {
-  const formData = new FormData()
-  formData.append('file', file)
-  formData.append('patientId', patientId)
-  formData.append('type', 'AVATAR')
+export async function uploadAttachment(file: File, patientId: string) {
+  return uploadFile(file, patientId, 'DOCUMENT')
+}
 
-  const response = await api.post("/attachments", formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
-  
-  return response.data
+export async function uploadAvatar(file: File, patientId: string) {
+  return uploadFile(file, patientId, 'AVATAR')
 }
