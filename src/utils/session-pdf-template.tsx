@@ -1,3 +1,5 @@
+"use client"
+
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 
 const styles = StyleSheet.create({
@@ -12,19 +14,19 @@ const styles = StyleSheet.create({
     footer: { position: 'absolute', bottom: 40, left: 50, right: 50, borderTop: 1, borderTopColor: '#e5e7eb', paddingTop: 10, textAlign: 'center', fontSize: 9, color: '#9ca3af' }
 })
 
-interface SessionPDFProps {
+// 🟢 Interface padronizada para aceitar propriedades simples
+export interface SessionPDFProps {
     psychologist: { name: string; crp?: string | null }
     patientName: string
-    date: string
-    content: string
-    diagnosis?: string
+    date: string      // String já formatada
+    content: string   // Conteúdo da nota
+    diagnosis?: string // Tema ou diagnóstico
 }
 
 export function SessionPDFTemplate({ psychologist, patientName, date, content, diagnosis }: SessionPDFProps) {
     return (
         <Document>
             <Page style={styles.page}>
-                {/* Cabeçalho */}
                 <View style={styles.header}>
                     <Text style={styles.title}>Prontuário de Atendimento Clínico</Text>
                     <Text style={styles.professionalInfo}>
@@ -33,7 +35,6 @@ export function SessionPDFTemplate({ psychologist, patientName, date, content, d
                     </Text>
                 </View>
 
-                {/* Metadados da Sessão */}
                 <View style={styles.metaRow}>
                     <View>
                         <Text style={{ fontSize: 9, color: '#6b7280' }}>Paciente</Text>
@@ -45,24 +46,21 @@ export function SessionPDFTemplate({ psychologist, patientName, date, content, d
                     </View>
                 </View>
 
-                {/* Diagnóstico (Opcional) */}
-                {diagnosis && diagnosis !== "Não informado" && (
+                {diagnosis && diagnosis !== "Sem tema registrado" && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Diagnóstico / Hipótese Diagnóstica</Text>
+                        <Text style={styles.sectionTitle}>Tema / Diagnóstico</Text>
                         <Text style={styles.content}>{diagnosis}</Text>
                     </View>
                 )}
 
-                {/* Evolução / Conteúdo Principal */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Evolução Psicológica</Text>
                     <Text style={styles.content}>{content}</Text>
                 </View>
 
-                {/* Rodapé de Validação */}
                 <View style={styles.footer}>
-                    <Text>Documento gerado eletronicamente em {new Date().toLocaleDateString('pt-BR')}</Text>
-                    <Text>Este documento é confidencial e de uso restrito conforme o Código de Ética Profissional do Psicólogo.</Text>
+                    <Text>Documento gerado em {new Date().toLocaleDateString('pt-BR')}</Text>
+                    <Text>Confidencial - Conforme Código de Ética Profissional.</Text>
                 </View>
             </Page>
         </Document>

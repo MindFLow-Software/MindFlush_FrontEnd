@@ -79,7 +79,7 @@ export function PatientsTableRow({ patient }: PatientsTableRowProps) {
                                 <Search className="h-4 w-4" aria-hidden="true" />
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent side="right" className="text-xs">Ver prontuário</TooltipContent>
+                        <TooltipContent side="right" className="text-xs">Ver Resumo</TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
             </TableCell>

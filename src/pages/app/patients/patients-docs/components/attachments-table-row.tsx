@@ -94,8 +94,8 @@ export function AttachmentsTableRow({ attachment, isSelected, onSelectChange, on
                 </TableCell>
 
                 <TableCell>
-                    <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 border border-transparent font-mono text-xs font-medium tabular-nums">
-                        <PackageOpen className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                    <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 border border-transparent font-mono text-xs font-medium tabular-nums text-muted-foreground">
+                        <PackageOpen className="h-3.5 w-3.5" aria-hidden="true" />
                         {formatBytes(SizeInBytes)}
                     </div>
                 </TableCell>
@@ -106,7 +106,7 @@ export function AttachmentsTableRow({ attachment, isSelected, onSelectChange, on
                             <CalendarDays className="h-2.5 w-2.5" aria-hidden="true" />
                             Enviado em
                         </span>
-                        <span className="text-sm font-semibold tracking-tight">
+                        <span className="text-sm font-semibold tracking-tight text-foreground">
                             {uploadedAt ? format(new Date(uploadedAt), "dd/MM/yyyy", { locale: ptBR }) : "—"}
                         </span>
                     </div>
@@ -119,8 +119,7 @@ export function AttachmentsTableRow({ attachment, isSelected, onSelectChange, on
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    type="button"
-                                    className="cursor-pointer h-8 w-8 rounded-lg transition-all text-muted-foreground hover:text-blue-600 hover:bg-blue-100/50 focus-visible:ring-2 focus-visible:ring-blue-500"
+                                    className="cursor-pointer h-8 w-8 rounded-lg transition-all text-muted-foreground hover:text-blue-600 hover:bg-blue-100/50"
                                     onClick={(e) => {
                                         e.preventDefault()
                                         e.stopPropagation()
@@ -138,8 +137,7 @@ export function AttachmentsTableRow({ attachment, isSelected, onSelectChange, on
                                 <Button
                                     size="icon"
                                     variant="ghost"
-                                    type="button"
-                                    className="cursor-pointer h-8 w-8 rounded-lg transition-all text-muted-foreground hover:text-red-600 hover:bg-red-100/50 focus-visible:ring-2 focus-visible:ring-red-500"
+                                    className="cursor-pointer h-8 w-8 rounded-lg transition-all text-muted-foreground hover:text-red-600 hover:bg-red-100/50"
                                     onClick={(e) => {
                                         e.preventDefault()
                                         e.stopPropagation()

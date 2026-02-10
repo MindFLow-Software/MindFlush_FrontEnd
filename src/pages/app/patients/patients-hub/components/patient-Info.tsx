@@ -1,10 +1,20 @@
 "use client"
 
+import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
+import { cn } from "@/lib/utils"
+
 interface PatientInfoProps {
     patient: {
-        email?: string | null
-        phoneNumber?: string | null
-        cpf?: string | null
+        id: string
+        firstName: string
+        lastName: string
+        cpf: string
+        email: string
+        phoneNumber: string
+        status: 'active' | 'inactive'
+        dateOfBirth?: string | Date | null
+        gender?: string | null
     }
 }
 
@@ -15,7 +25,6 @@ const formatCPF = (value: string | null | undefined) => {
         .replace(/(\d{3})(\d)/, "$1.$2")
         .replace(/(\d{3})(\d)/, "$1.$2")
         .replace(/(\d{3})(\d{1,2})/, "$1-$2")
-        .replace(/(-\d{2})\d+?$/, "$1")
 }
 
 const formatPhoneNumber = (value: string | null | undefined) => {
@@ -24,22 +33,40 @@ const formatPhoneNumber = (value: string | null | undefined) => {
     return cleanValue
         .replace(/(\d{2})(\d)/, "($1) $2")
         .replace(/(\d{5})(\d)/, "$1-$2")
-        .replace(/(-\d{4})\d+?$/, "$1")
+}
+
+const calculateAge = (dob: string | Date | null | undefined) => {
+    if (!dob) return "—"
+    const birthDate = new Date(dob)
+    if (isNaN(birthDate.getTime())) return "—"
+
+    const today = new Date()
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const m = today.getMonth() - birthDate.getMonth()
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--
+    }
+    return `${age} anos`
 }
 
 interface InfoFieldProps {
     label: string
-    value: string
+    value: string | number
     isMono?: boolean
+    statusVariant?: boolean
 }
 
-function InfoField({ label, value, isMono }: InfoFieldProps) {
+function InfoField({ label, value, isMono, statusVariant }: InfoFieldProps) {
     return (
         <div className="space-y-1">
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                 {label}
             </span>
-            <p className={`text-sm font-medium ${isMono ? "font-mono" : ""}`}>
+            <p className={cn(
+                "text-sm font-medium",
+                isMono && "font-mono tabular-nums",
+                statusVariant && (value === 'Ativo' ? "text-emerald-600" : "text-amber-600")
+            )}>
                 {value}
             </p>
         </div>
@@ -47,27 +74,52 @@ function InfoField({ label, value, isMono }: InfoFieldProps) {
 }
 
 export function PatientInfo({ patient }: PatientInfoProps) {
+    const age = calculateAge(patient.dateOfBirth)
+
+    const dobFormatted = patient.dateOfBirth
+        ? format(new Date(patient.dateOfBirth), "dd/MM/yyyy", { locale: ptBR })
+        : "—"
+
     return (
-        // 🟢 Removido AccordionItem, agora é uma div estática
         <div className="border rounded-xl px-4 bg-card shadow-sm">
-            {/* 🟢 Cabeçalho fixo sem interação */}
-            <div className="text-sm font-bold py-4 border-b mb-2">
-                Informações do Paciente
+            <div className="text-sm font-bold py-4 border-b mb-2 flex justify-between items-center">
+                <span>Informações de Cadastro</span>
+                <span className={cn(
+                    "text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-tighter",
+                    patient.status === 'active' ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+                )}>
+                    {patient.status === 'active' ? "Paciente Ativo" : "Paciente Inativo"}
+                </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 py-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-6 gap-x-8 py-4">
                 <InfoField
-                    label="E-mail de Contato"
-                    value={patient.email || "—"}
+                    label="Idade"
+                    value={age}
                 />
                 <InfoField
-                    label="Telefone / WhatsApp"
-                    value={formatPhoneNumber(patient.phoneNumber)}
+                    label="Nascimento"
+                    value={dobFormatted}
+                    isMono
                 />
                 <InfoField
                     label="CPF"
                     value={formatCPF(patient.cpf)}
                     isMono
+                />
+                <InfoField
+                    label="Telefone / WhatsApp"
+                    value={formatPhoneNumber(patient.phoneNumber)}
+                    isMono
+                />
+                <InfoField
+                    label="E-mail de Contato"
+                    value={patient.email || "—"}
+                />
+                <InfoField
+                    label="Status do Prontuário"
+                    value={patient.status === 'active' ? 'Ativo' : 'Inativo'}
+                    statusVariant
                 />
             </div>
         </div>

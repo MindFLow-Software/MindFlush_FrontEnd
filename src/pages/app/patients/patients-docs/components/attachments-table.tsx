@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { Paperclip } from "lucide-react"
 import {
     Table,
@@ -8,7 +8,7 @@ import {
     TableCell,
     TableHead,
     TableHeader,
-    TableRow
+    TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -23,43 +23,46 @@ interface AttachmentsTableProps {
     perPage?: number
 }
 
-export function AttachmentsTable({ attachments, isLoading, onDelete, perPage = 10 }: AttachmentsTableProps) {
+export function AttachmentsTable({
+    attachments,
+    isLoading,
+    onDelete,
+    perPage = 10,
+}: AttachmentsTableProps) {
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const columnCount = 6
 
     const isAllSelected = attachments.length > 0 && selectedIds.length === attachments.length
 
-    const handleSelectAll = (checked: boolean) => {
+    const handleSelectAll = useCallback((checked: boolean) => {
         if (checked) {
             setSelectedIds(attachments.map((doc) => doc.id))
         } else {
             setSelectedIds([])
         }
-    }
+    }, [attachments])
 
-    const handleToggleSelect = (id: string, checked: boolean) => {
+    const handleToggleSelect = useCallback((id: string, checked: boolean) => {
         if (checked) {
             setSelectedIds((prev) => [...prev, id])
         } else {
             setSelectedIds((prev) => prev.filter((itemId) => itemId !== id))
         }
-    }
+    }, [])
 
-    const handleBulkDelete = () => {
+    const handleBulkDelete = useCallback(() => {
         selectedIds.forEach(id => onDelete(id))
         setSelectedIds([])
-    }
+    }, [selectedIds, onDelete])
 
     return (
         <div className="space-y-4 w-full">
             {selectedIds.length > 0 && (
-                <div className="space-y-4 w-full">
-                    <BulkDeleteAction
-                        selectedCount={selectedIds.length}
-                        onConfirm={handleBulkDelete}
-                        isDeleting={false}
-                    />
-                </div>
+                <BulkDeleteAction
+                    selectedCount={selectedIds.length}
+                    onConfirm={handleBulkDelete}
+                    isDeleting={false} onClear={function (): void {
+                    } }                />
             )}
 
             <div className="rounded-xl border bg-background shadow-sm overflow-hidden w-full">

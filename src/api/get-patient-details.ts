@@ -10,6 +10,9 @@ export interface GetPatientDetailsResponse {
     email: string
     phoneNumber: string
     status: 'active' | 'inactive'
+    // 🟢 Adicione estes campos na Interface
+    dateOfBirth: string | null 
+    gender: 'MASCULINE' | 'FEMININE' | 'OTHER' | null
     sessions: Array<{
       id: string
       date: string
@@ -34,6 +37,9 @@ export async function getPatientDetails(patientId: string, pageIndex: number): P
     params: { pageIndex },
   })
 
+  // Log de Debug: Abra o console do navegador e veja se o campo existe aqui
+  console.log("Dados brutos do paciente:", response.data.patient)
+
   const p = response.data.patient
   const raw = p.props || p 
 
@@ -48,6 +54,10 @@ export async function getPatientDetails(patientId: string, pageIndex: number): P
       phoneNumber: raw.phoneNumber || "",
       status: raw.isActive === false ? 'inactive' : 'active',
       profileImageUrl: raw.profileImageUrl || raw.profile_image_url || null,
+      
+      dateOfBirth: raw.dateOfBirth || raw.date_of_birth || null, 
+      gender: raw.gender || null,
+      
       sessions: raw.sessions || p.sessions || []
     }
   }
