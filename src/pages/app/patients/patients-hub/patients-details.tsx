@@ -33,6 +33,8 @@ export default function PatientDetails() {
 
     const [pageIndex, setPageIndex] = useState(0)
 
+    const [currentTab, setCurrentTab] = useState("clinical")
+
     const { data, isLoading, isError } = useQuery({
         queryKey: ["patient-details", id, pageIndex],
         queryFn: () => getPatientDetails(id!, pageIndex),
@@ -72,6 +74,8 @@ export default function PatientDetails() {
     }
 
     const { patient, meta } = data
+    const patientFullName = `${patient.firstName} ${patient.lastName}`
+
     return (
         <div className="flex flex-col gap-6">
             {/* Top bar: Breadcrumb + Actions */}
@@ -90,7 +94,7 @@ export default function PatientDetails() {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="gap-1.5 text-muted-foreground bg-transparent"
+                                className="gap-1.5 text-muted-foreground bg-transparent cursor-pointer"
                             >
                                 <Download className="size-3.5" />
                                 <span className="hidden md:inline">Exportar</span>
@@ -99,7 +103,7 @@ export default function PatientDetails() {
 
                         <Button
                             size="sm"
-                            className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+                            className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
                         >
                             <Plus className="size-3.5" />
                             <span>Nova Sessão</span>
@@ -107,22 +111,22 @@ export default function PatientDetails() {
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="size-8 p-0">
+                                <Button variant="ghost" size="sm" className="size-8 p-0 cursor-pointer">
                                     <MoreVertical className="size-4" />
                                     <span className="sr-only">Mais opções</span>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48">
-                                <DropdownMenuItem className="gap-2 sm:hidden">
+                                <DropdownMenuItem className="gap-2 sm:hidden cursor-pointer">
                                     <Download className="size-4" />
                                     Exportar PDF
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="gap-2">
+                                <DropdownMenuItem className="gap-2 cursor-pointer">
                                     <Printer className="size-4" />
                                     Imprimir prontuário
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive">
+                                <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive cursor-pointer">
                                     <Trash2 className="size-4" />
                                     Arquivar paciente
                                 </DropdownMenuItem>
@@ -133,10 +137,8 @@ export default function PatientDetails() {
                 <Separator />
             </div>
 
-            {/* Patient Header */}
             <PatientDetailsHeader patient={patient} />
 
-            {/* Metric Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <MetricCard
                     title="Sessões Totais"
@@ -180,8 +182,7 @@ export default function PatientDetails() {
                 </Card>
             </div>
 
-            {/* Tabs Section */}
-            <Tabs defaultValue="clinical" className="w-full">
+            <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
                 <TabsList className="bg-muted/60 p-1 rounded-lg w-full sm:w-auto">
                     <TabsTrigger
                         value="clinical"
@@ -193,7 +194,7 @@ export default function PatientDetails() {
                         value="timeline"
                         className="cursor-pointer rounded-md px-6 text-sm data-[state=active]:shadow-sm"
                     >
-                        Timeline
+                        Histórico
                     </TabsTrigger>
                     <TabsTrigger
                         value="docs"
@@ -204,7 +205,7 @@ export default function PatientDetails() {
                 </TabsList>
 
                 <TabsContent value="clinical" className="mt-6">
-                    <PatientInfo patient={patient} />
+                    <PatientInfo patient={{ ...patient, totalAppointments: meta.totalCount }} />
                 </TabsContent>
 
                 <TabsContent value="timeline" className="mt-6">
@@ -212,7 +213,8 @@ export default function PatientDetails() {
                         sessions={patient.sessions}
                         meta={meta}
                         pageIndex={pageIndex}
-                        onPageChange={setPageIndex} patientName={""}
+                        onPageChange={setPageIndex}
+                        patientName={patientFullName}
                     />
                 </TabsContent>
 

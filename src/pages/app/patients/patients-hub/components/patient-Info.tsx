@@ -15,8 +15,10 @@ interface PatientInfoProps {
         status: 'active' | 'inactive'
         dateOfBirth?: string | Date | null
         gender?: string | null
+        totalAppointments?: number
     }
 }
+
 
 const formatCPF = (value: string | null | undefined) => {
     if (!value) return "—"
@@ -116,6 +118,13 @@ export function PatientInfo({ patient }: PatientInfoProps) {
                     label="E-mail de Contato"
                     value={patient.email || "—"}
                 />
+
+                <InfoField
+                    label="Total de Atendimentos"
+                    value={patient.totalAppointments ?? 0}
+                    isMono
+                />
+
                 <InfoField
                     label="Status do Prontuário"
                     value={patient.status === 'active' ? 'Ativo' : 'Inativo'}
